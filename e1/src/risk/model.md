@@ -4,14 +4,12 @@ This document defines a model for transparently and generatively calculating pro
 
 
 ```js
-const active_projects = await FileAttachment('/data/all_projects.csv').csv()
+const active_projects = await FileAttachment('/data/internal/all_projects.csv').csv()
 ```
-
 
 ```js
-const outcomes_survey = await FileAttachment("/data/outcomes_survey.csv").csv()
+const outcomes_survey = await FileAttachment("/data/internal/outcomes_survey.csv").csv()
 ```
-
 
 ---
 
@@ -261,7 +259,7 @@ function invert(inputMap) {
 **`worldriskindex 24 =`**
 
 ```js
-const worldriskindex24_workbook = await FileAttachment("/worldriskindex-2024.xlsx").xlsx();
+const worldriskindex24_workbook = await FileAttachment("/data/external/worldriskindex-2024.xlsx").xlsx();
 
 const worldriskindex24 = worldriskindex24_workbook.sheet("Results 2024", {headers: true});
 display(worldriskindex24)
@@ -300,7 +298,7 @@ display(worldriskindex24_risk_map)
 **`epi2024 =`**
 
 ```js
-const epi2024 = await FileAttachment("/epi2024results.csv").csv()
+const epi2024 = await FileAttachment("/data/external/epi2024results.csv").csv()
 display(epi2024)
 ```
 
@@ -315,7 +313,7 @@ display(epiMap_risk_map)
 **`ND-GAIN =`**
 
 ```js
-const nd_gain2025_workbook = await FileAttachment("/nd_gain_countryindex_2025.zip").zip()
+const nd_gain2025_workbook = await FileAttachment("/data/external/nd_gain_countryindex_2025.zip").zip()
 
 const nd_gain2025 = await nd_gain2025_workbook.file("resources/gain/gain.csv").csv()
 display(nd_gain2025)
@@ -554,7 +552,7 @@ display(globalRightsIndex2025_map_normalized);
 **`Freedom in the World Index =`**
 
 ```js
-const FIW_workbook = await FileAttachment("/Country_and_Territory_Ratings_and_Statuses_FIW_1973-2024.xlsx").xlsx()
+const FIW_workbook = await FileAttachment("/data/external/Country_and_Territory_Ratings_and_Statuses_FIW_1973-2024.xlsx").xlsx()
 ```
 
 ```js
@@ -657,7 +655,7 @@ display(FIW_clMap_normalized)
 
 
 ```js
-const freedom_index_data = await FileAttachment("/2023-Human-Freedom-Index-Data.csv").csv();
+const freedom_index_data = await FileAttachment("/data/external/2023-Human-Freedom-Index-Data.csv").csv();
 display(freedom_index_data)
 ```
 
@@ -706,7 +704,7 @@ display(freedom_index_risk_map_normalized_inverted)
 
 
 ```js
-const globalSlaveryIndex_zip = FileAttachment("/2023-Global-Slavery-Index-Data-dd6d042a-e404-405a-8956-de68d59a11aa.zip").zip()
+const globalSlaveryIndex_zip = FileAttachment("/data/external/2023-Global-Slavery-Index-Data-dd6d042a-e404-405a-8956-de68d59a11aa.zip").zip()
 ```
 
 ```js
@@ -728,7 +726,7 @@ display(globalSlavery_dataMap)
 **`Gender Inequality Index (GII) =`**
 
 ```js
-const gii_workbook = FileAttachment("HDR25_Statistical_Annex_GII_Table.xlsx").xlsx()
+const gii_workbook = FileAttachment("/data/external/HDR25_Statistical_Annex_GII_Table.xlsx").xlsx()
 ```
 
 ```js
@@ -829,7 +827,7 @@ display(gii2023_dataMap_normalized)
 -->
 
 ```js
-const wgidataset_excel = FileAttachment("wgidataset_excel.zip").zip()
+const wgidataset_excel = FileAttachment("/data/external/wgidataset_excel.zip").zip()
 ```
 
 ```js
@@ -857,7 +855,7 @@ develop map
 
 
 ```js
-const rol_workbook = FileAttachment("2024_wjp_rule_of_law_index_HISTORICAL_DATA_FILE.xlsx").xlsx()
+const rol_workbook = FileAttachment("/data/external/2024_wjp_rule_of_law_index_HISTORICAL_DATA_FILE.xlsx").xlsx()
 ```
 
 ```js
@@ -918,7 +916,7 @@ display(rol_dataMap_normalized_inverted)
 **`Corruption Perceptions Index =`**
 
 ```js
-const cpi_workbook = FileAttachment("CPI2024-Results-and-trends.xlsx").xlsx()
+const cpi_workbook = FileAttachment("/data/external/CPI2024-Results-and-trends.xlsx").xlsx()
 ```
 
 ```js
@@ -947,7 +945,7 @@ display(cpi_dataMap)
 **`Bertelsmann Transformation Index (BTI) =`**
 
 ```js
-const bti_workbook = FileAttachment("BTI_2024_Scores.xlsx").xlsx()
+const bti_workbook = FileAttachment("/data/external/BTI_2024_Scores.xlsx").xlsx()
 ```
 
 ```js
@@ -996,7 +994,7 @@ display(bti_dataMap_economy)
 
 
 ```js
-const fsi_workbook = FileAttachment("FSI-2023-DOWNLOAD.xlsx").xlsx()
+const fsi_workbook = FileAttachment("/data/external/FSI-2023-DOWNLOAD.xlsx").xlsx()
 ```
 
 ```js
