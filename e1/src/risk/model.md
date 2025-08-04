@@ -60,6 +60,7 @@ Based on the supplied project attributes and contextual data, the model generate
 * ${tex`n_E`} = Number of environmental (E) reference indices
 * ${tex`n_S`} = Number of social (S) reference indices
 * ${tex`n_G`} = Number of governance (G) reference indices
+* ${tex`n_P`} = Number of pillars with reference indices
 * ${tex`\omega \in [0, 1] `}: Weighting factor for combining environmental and country risk
 * ${tex`C \in [0, 100]: Country Risk Index`}
 * ${tex`O_{context(i)}`} = Supplemental context values
@@ -101,7 +102,7 @@ w_{\text{EnvCat}} =
 ```
 
 
-```js echo
+```js
 // Environmental category weights
 const envCategoryWeight = ({ 
   A: 85,
@@ -117,7 +118,7 @@ const envCategoryWeight = ({
 Applying this to portfolio `P` :
 
 
-```js echo
+```js
 /// For each project, look up the env_category value and
 /// create new attribute recording envCategoryWeight.
 
@@ -149,7 +150,7 @@ display(active_projects_ES_risk_numeric)
 
 The Country Risk Index (CRI) is derived from [external global ESG risk indices](/indices/contextual-risk-indices.html) and combined into a single, composite ESG score.
 
-Reference indices included in the model are:
+Reference available in the model are:
 
 **Environmental**
   - [WorldRiskIndex](https://weltrisikobericht.de/worldriskreport/)
@@ -620,6 +621,7 @@ const FIW_prMap = new Map(FIW_data2024.map(d => [d.country, d.PR]));
 const FIW_clMap = new Map(FIW_data2024.map(d => [d.country, d.CL]));
 ```
 
+<mark>!!!</mark>
 
 ```js
 display(FIW_data2024)
@@ -629,7 +631,7 @@ display(FIW_data2024)
 display(FIW_data_structured)
 ```
 
-FIW_prMap
+**`FIW_prMap`**
 ```js
 display(FIW_prMap);
 ```
@@ -639,7 +641,7 @@ display(FIW_prMap_normalized)
 ```
 
 
-FIW_clMap
+**`FIW_clMap`**
 ```js
 display(FIW_clMap);
 ```
@@ -715,6 +717,8 @@ const globalSlaveryIndex_workbook = globalSlaveryIndex_zip.file("2023-Global-Sla
 const globalSlaveryIndex_data = globalSlaveryIndex_workbook.sheet("GSI 2023 summary data", {range: "A3:", headers: true});
 display(globalSlaveryIndex_data)
 ```
+
+<mark>!!!</mark>
 
 ```js
 const globalSlavery_dataMap = new Map(globalSlaveryIndex_data.map(d => [d.Country, d["Total Vulnerability score (%)"]]));
@@ -944,6 +948,8 @@ display(cpi_dataMap)
 
 **`Bertelsmann Transformation Index (BTI) =`**
 
+<mark>!!!</mark>
+
 ```js
 const bti_workbook = FileAttachment("/data/external/BTI_2024_Scores.xlsx").xlsx()
 ```
@@ -993,6 +999,10 @@ display(bti_dataMap_economy)
 **`Fragile States Index (FSI) =`**
 
 
+
+<mark>!!!</mark>
+
+
 ```js
 const fsi_workbook = FileAttachment("/data/external/FSI-2023-DOWNLOAD.xlsx").xlsx()
 ```
@@ -1005,6 +1015,8 @@ const fsi_data = fsi_workbook.sheet(0, {
   display(fsi_data)
 ```
 
+<mark>!!!</mark>
+
 ```js
 const fsi_score_map = new Map(fsi_data.map(d => [d.Country.trim(), +d["Total"]])); // "Total" = FSI score;
   display(fsi_score_map)
@@ -1013,17 +1025,168 @@ const fsi_score_map = new Map(fsi_data.map(d => [d.Country.trim(), +d["Total"]])
 
 
 
+```js
+// for ease of reference, an index of all index of data providers by name and dataset
+const esgProvider_dataIndex = new Map([
+  ["World Risk Index 2024 (Environmental)", worldriskindex24_risk_map],
+  ["Environmental Performance Index (EPI)", epiMap_risk_map_inverted],
+  ["ND-GAIN 2025 (Climate Risk)", nd_gain2025_risk_map],
+  ["Global Rights Index 2025 - Social Risk", globalRightsIndex2025_map_normalized],
+  ["Freedom in the World Index - PR", FIW_prMap],
+  ["Freedom Index by Country", freedom_index_risk_map_normalized_inverted],
+  ["Global Slavery Index (GSI)", globalSlavery_dataMap],
+  ["Gender Inequality Index (GII) 2023", gii2023_dataMap_normalized],
+  ["Worldwide Governance Indicators (WGI)", wgidata],
+  ["Rule of Law Index (RL)", rol_dataMap_normalized_inverted],
+  ["Corruption Perceptions Index (CPI)", cpi_dataMap_inverted],
+  ["Bertelsmann Transformation Index (BTI) - Governance", bti_dataMap_governance],
+  ["Fragile States Index (FSI)", fsi_score_map]
+]);
+```
 
 
 
+```js
+// for creating interactive inputs, we define a list of all ESG data providers to potentially incorporate in the model:
+const esgProviders = {
+
+E: [
+"World Risk Index 2024 (Environmental)", //
+"Environmental Performance Index (EPI)", //
+"ND-GAIN 2025 (Climate Risk)", //
+
+],
+
+S: [
+"Global Rights Index 2025 - Social Risk", //
+"Freedom in the World Index - PR",
+"Freedom Index by Country", //
+"Global Slavery Index (GSI)", //
+"Gender Inequality Index (GII) 2023" //
+
+],
+
+G: [
+"Worldwide Governance Indicators (WGI)",
+"Rule of Law Index (RL)", //
+"Corruption Perceptions Index (CPI)", //
+"Bertelsmann Transformation Index (BTI) - Governance",
+"Fragile States Index (FSI)"
+]
+};
+```
+
+---
+
+
+The model can be adapt to evaluate one or a custom selection of indices across pillars pillars:
+
+
+**`Environmental` <code>[${selected_provider_E.length}]</code>**
+```js
+const selected_provider_E = view(Inputs.checkbox(esgProviders.E, {value: esgProviders.E}))
+```
+
+**`Social` <code>[${selected_provider_S.length}]</code>**
+```js
+const selected_provider_S = view(Inputs.checkbox(esgProviders.S, {value: esgProviders.S}))
+```
+
+**`Governance` <code>[${selected_provider_G.length}]</code>**
+```js
+const selected_provider_G = view(Inputs.checkbox(esgProviders.G, {value: esgProviders.G}))
+```
+
+</br>
+Here are the ${esgProviders__selectedCount} ESG indices currently being evaluated:
+
+```js
+const esgProviders_selected = {
+
+E: selected_provider_E,
+
+S: selected_provider_S,
+
+G: selected_provider_G,
+};
+display(esgProviders_selected)
+```
+
+
+
+
+<!-- Helper functions to inform UI presentation. -->
+
+```js
+const esgProviders__selectedCount = Object.values(esgProviders_selected)
+  .flat()
+  .filter(d => d != null && d !== "")
+  .length;
+```
+
+```js
+const esgProviders_selectedCountPillar = Object.fromEntries(
+  Object.entries(esgProviders_selected).map(([key, arr]) => [
+    key,
+    arr.filter(d => d != null && d !== "").length
+  ])
+);
+```
 
 
 ---
 
 
+Each pillar (E, S, G) is individually normalized:
 
 
-```js 
+```tex
+E_{country(i)} = \left(
+\frac{
+\sum_{index=1}^{n_E} E_{c(index)} }{n_E}
+\right)
+```
+
+```tex
+S_{country(i)} = \left(
+\frac{
+\sum_{index=1}^{n_S} S_{c(index)} }{n_S}
+\right)
+```
+
+```tex
+G_{country(i)} =  \left(
+\frac{
+\sum_{index=1}^{n_G} G_{c(index)} }{n_G}
+\right)
+```
+
+
+
+
+```js
+const pillarScores = computePillarScores(CRI_selected);
+display(pillarScores)
+```
+
+
+```js
+function computePillarScores(pillarDataIndices) {
+  const result = {};
+
+  for (const [pillar, maps] of Object.entries(pillarDataIndices)) {
+    if (maps.length === 0) continue;
+    result[pillar] = normalizeAndAverageScores(...maps);
+  }
+
+  return result;
+}
+```
+
+
+```js
+// helper function for score normalization
+
 function normalizeAndAverageScores(...maps) {
   const countryScores = new Map();
 
@@ -1054,28 +1217,50 @@ function normalizeAndAverageScores(...maps) {
 ```
 
 
-Each pillar (E, S, G) is individually normalized:
 
-
-```tex
-E_{country(i)} = \left(
-\frac{
-\sum_{index=1}^{n_E} E_{c(index)} }{n_E}
-\right)
+```js
+/// helper logic for fuzzy matching ESG provider names
+/// we will wish to later make this more robust
+function provider_nameMatch(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/gi, '') // remove spaces, punctuation
+    .trim();
+}
 ```
 
-```tex
-S_{country(i)} = \left(
-\frac{
-\sum_{index=1}^{n_S} S_{c(index)} }{n_S}
-\right)
+
+```js
+// this function rebuilds our data index by looking up user-selected providers.  The function requires two parameters -- the names of ESG providers to be evaluated and the index mapping provides to referenced datasets
+function pillar_groupedData(providersByPillar, esgProvider_dataIndex) {
+  const result = {};
+
+  const indexKeysNormalized = Array.from(esgProvider_dataIndex.keys()).map(key => ({
+    key,
+    norm: provider_nameMatch(key)
+  }));
+
+  for (const [pillarKey, providerNames] of Object.entries(providersByPillar)) {
+    const datasets = providerNames.map(providerName => {
+      const normProvider = provider_nameMatch(providerName);
+
+      const matchedEntry = indexKeysNormalized.find(({ norm }) =>
+        norm.includes(normProvider) || normProvider.includes(norm)
+      );
+
+      return matchedEntry ? esgProvider_dataIndex.get(matchedEntry.key) : null;
+    }).filter(Boolean);
+
+    result[pillarKey] = datasets;
+  }
+
+  return result;
+}
+
 ```
 
-```tex
-G_{country(i)} =  \left(
-\frac{
-\sum_{index=1}^{n_G} G_{c(index)} }{n_G}
-\right)
+```js
+const CRI_selected = pillar_groupedData(esgProviders_selected, esgProvider_dataIndex);
 ```
 
 
@@ -1084,40 +1269,60 @@ G_{country(i)} =  \left(
 The composite ESG score for each country (CRI) is generated from the average of the normalized ESG values:
 
 ```tex
-CRI = ESG_{\text{composite}(i)} = \frac{E_{country} + S_{country} + G_{country}}{3}
+CRI = ESG_{\text{composite}(i)} = \frac{E_{country} + S_{country} + G_{country}}{n_P}
 ```
 <br/>
 
-<mark>!!!!!</mark>
 
+**`Country Risk Index (CRI) = `**
 
-
-```js echo
-const countryRiskIndex = normalizeAndAverageScores(
-
-// environment 
-  worldriskindex24_risk_map,
-  nd_gain2025_risk_map,
-  epiMap_risk_map_inverted,
-
-//social
-  globalRightsIndex2025_map_normalized,
-  freedom_index_risk_map_normalized_inverted,
-  globalSlavery_dataMap,
-  gii2023_dataMap_normalized,
-  rol_dataMap_normalized_inverted,
-  cpi_dataMap_inverted
-);
+```js
+const countryRiskIndex = computeCompositeESGScore(pillarScores);
 display(countryRiskIndex)
 ```
 
-<br/>
 
-Using the indexed data, factored CRI scores are recorded (labeled to include year of record).
+
+```js
+function computeCompositeESGScore(pillarScores) {
+  const allCountries = new Set(
+    Object.values(pillarScores)
+      .flatMap(map => Array.from(map.keys()))
+  );
+
+  const compositeScores = new Map();
+
+  for (const country of allCountries) {
+    const scores = ["E", "S", "G"]
+      .map(pillar => pillarScores[pillar]?.get(country))
+      .filter(score => typeof score === "number");
+
+    if (scores.length === 0) continue;
+
+    const sum = scores.reduce((acc, v) => acc + v, 0);
+    const avg = sum / scores.length;
+
+    compositeScores.set(country, avg);
+  }
+
+  return compositeScores;
+}
+```
+
+
+
+
+
+
+
+
+<br/>
 
 
 
 **Step 2 Output: Portfolio data including factored CRI values** 
+
+<!--Using the indexed data, factored CRI scores are recorded (labeled to include year of record).-->
 
 
 Portfolio `P` with composite `CRI`</sub> values  = 
@@ -1127,7 +1332,7 @@ display(active_projects_ES_risk_numeric_CRI)
 ```
 
 
-```js echo
+```js
 function compositeCountryRiskIndex(projects) {
   return projects.map(project => {
     const rawCountry = project["Host Country"];
@@ -1147,41 +1352,6 @@ const active_projects_ES_risk_numeric_CRI = compositeCountryRiskIndex(active_pro
 ```
 
 
----
-
-
-```js 
-const esgProviders = {
-
-E: [
-"WorldRiskIndex",
-"Environmental Performance Index (EPI)",
-"ND-GAIN Index",
-
-],
-
-S: [
-"Global Rights Index",
-"Freedom in the World Index",
-"Freedom Index by Country",
-"Global Slavery Index",
-"Social Institutions and Gender Index (SIGI)",
-"Gender Equality Index",
-"CPIA Gender Equality Rating",
-"Gender Inequality Index (GII)"
-
-],
-
-G: [
-"Worldwide Governance Indicators (WGI)",
-"Rule of Law Index",
-"Corruption Perceptions Index",
-"Bertelsmann Transformation Index (BTI)",
-"Fragile States Index (FSI)"
-]
-};
-
-```
 
 ---
 
@@ -1189,7 +1359,7 @@ G: [
 
 <br/>
 
-This step combines the ESRS and CRI to create a Country-Adjusted ESRS.  This weighted value assigned to each scoring component can be defined as a variable ${tex` \omega`}.  The factored score is thus computed as:
+This step combines the ESRS and CRI to create a Country-Adjusted ESRS.  This weighted value assigned to each scoring component (_ESRS vs. CRI_) can be defined as a variable ${tex` \omega`}.  The factored score is thus computed as:
 
 ${tex`ESRS_{countryAdjusted(i)} = (1 - \omega) \cdot EnvCat + \omega \cdot C`}
 
@@ -1200,19 +1370,15 @@ const omega = view(Inputs.range([0.1,0.9], {step: 0.1, value: 0.3}))
 ```
 
 
+<br/>
+
+**Step 3 Output: Portfolio data including country-adjusted ESRS** 
 
 
----
-**<mark>Step 3 Output</mark>** 
+Portfolio P with composite `CRI` values and country-adjusted `ESRS` scores:</sub> 
 
 
-`ESRS`<sub>`countryAdjusted`</sub> = 
-
-
-
-
-
-```js echo
+```js
 const ESRS_countryAdjusted = active_projects_ES_risk_numeric_CRI.map(d => ({
   ...d,
   "ESRS Country Adjusted": 
@@ -1338,7 +1504,6 @@ display(iesc_reporting)
 **<mark>Step 4 Output</mark>** 
   
 
-<mark>!!!</mark>
 
 ```js
 const ESRScontext = writeContextValue_example(ESRS_countryAdjusted);
