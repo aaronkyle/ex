@@ -140,6 +140,15 @@ const active_projects_ES_risk_numeric = numericEnvCat(active_projects)
 display(active_projects_ES_risk_numeric)
 ```
 
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'active_projects_ES_risk_numeric.csv', 'Download E&S Risk Numeric)');
+})(active_projects_ES_risk_numeric));
+```
+
+
 <br/>
 
 ---
@@ -602,6 +611,9 @@ const FIW_data_structured = (() => {
 ```
 
 
+```js
+//display(FIW_data_structured)
+```
 
 ```js
 const FIW_data2024 = FIW_data_by_year.get("2024") || [];
@@ -621,17 +633,14 @@ const FIW_prMap = new Map(FIW_data2024.map(d => [d.country, d.PR]));
 const FIW_clMap = new Map(FIW_data2024.map(d => [d.country, d.CL]));
 ```
 
-<mark>!!!</mark>
+
 
 ```js
 display(FIW_data2024)
 ```
 
-```js
-display(FIW_data_structured)
-```
 
-**`FIW_prMap`**
+**`FIW_pr`**
 ```js
 display(FIW_prMap);
 ```
@@ -641,7 +650,7 @@ display(FIW_prMap_normalized)
 ```
 
 
-**`FIW_clMap`**
+**`FIW_cl`**
 ```js
 display(FIW_clMap);
 ```
@@ -682,7 +691,7 @@ const freedom_index_selected_component = view(Inputs.select(
 
 ```js
 const freedom_index_risk_map = new Map(freedom_index_data.map(d => [d["countries"].trim(), +d[freedom_index_selected_component.value]]));
-display(freedom_index_risk_map);
+display(invert(freedom_index_risk_map));
 ```
 
 
@@ -717,8 +726,6 @@ const globalSlaveryIndex_workbook = globalSlaveryIndex_zip.file("2023-Global-Sla
 const globalSlaveryIndex_data = globalSlaveryIndex_workbook.sheet("GSI 2023 summary data", {range: "A3:", headers: true});
 display(globalSlaveryIndex_data)
 ```
-
-<mark>!!!</mark>
 
 ```js
 const globalSlavery_dataMap = new Map(globalSlaveryIndex_data.map(d => [d.Country, d["Total Vulnerability score (%)"]]));
@@ -826,16 +833,14 @@ display(gii2023_dataMap_normalized)
 <br/>
 
 **`Worldwide Governance Indicators (WGI) =`**
-<!--
-!!!!!!!!!!!!!!!!!!!!!!!!
--->
+<mark>!!!!!!!!!!!!!!!!!!!!!!!!</mark>
 
 ```js
-const wgidataset_excel = FileAttachment("/data/external/wgidataset_excel.zip").zip()
+const wgidataset_excel = FileAttachment("/data/external/wgidataset_with_sourcedata_excel.zip").zip()
 ```
 
 ```js
-const wgidataset_workbook = wgidataset_excel.file("wgidataset.xlsx").xlsx()
+const wgidataset_workbook = wgidataset_excel.file("wgidataset_with_sourcedata.xlsx").xlsx()
 ```
 
 ```js
@@ -844,14 +849,132 @@ display(wgidata)
 ```
 
 ```js
+const wgidataset_year_indicator_grouped = d3.group(wgidata, d => d.year, d => d.indicator)
+display(wgidataset_year_indicator_grouped)
+```
+
+```js
 const wgidataset_grouped = d3.group(wgidata, d => d.indicator)
 ```
 
+```js
+const wgidataset_year_indicator_grouped_2023 = d3.group(
+  wgidata.filter(d => d.year === 2023),
+  d => d.indicator
+);
+//display(wgidataset_year_indicator_grouped_2023)
+```
 
 <!---
 
-develop map
+develop map + normalize data
 --->
+
+```js
+function normalizeWRI(inputMap, min = -2.5, max = 2.5) {
+  const range = max - min;
+  const normalizedMap = new Map();
+
+  for (const [key, value] of inputMap.entries()) {
+    if (typeof value === "number" && !isNaN(value)) {
+      const normValue = ((value - min) / range) * 100;
+      normalizedMap.set(key, normValue);
+    } else {
+      normalizedMap.set(key, null); // handle missing or invalid data
+    }
+  }
+
+  return normalizedMap;
+}
+
+```
+
+
+**`WGI_cc - Control of Corruption`**
+
+```js
+const WGI_2023_cc = wgidataset_year_indicator_grouped_2023.get("cc");
+display(WGI_2023_cc)
+```
+
+```js
+const WGI_2023_cc_dataMap = new Map(WGI_2023_cc.map(d => [d.countryname, d["estimate"]]));
+display(WGI_2023_cc_dataMap)
+```
+
+
+
+**`WGI_ge - Government Effectiveness `**
+
+```js
+const WGI_2023_ge = wgidataset_year_indicator_grouped_2023.get("ge");
+display(WGI_2023_ge)
+```
+
+```js
+const WGI_2023_ge_dataMap = new Map(WGI_2023_ge.map(d => [d.countryname, d["estimate"]]));
+display(WGI_2023_ge_dataMap)
+display(invert(normalizeWRI(WGI_2023_ge_dataMap)))
+```
+
+
+**`WGI_pv - Political Stability and Absence of Violence/Terrorism`**
+
+```js
+const WGI_2023_pv = wgidataset_year_indicator_grouped_2023.get("pv");
+display(WGI_2023_pv)
+```
+
+```js
+const WGI_2023_pv_dataMap = new Map(WGI_2023_pv.map(d => [d.countryname, d["estimate"]]));
+display(WGI_2023_pv_dataMap)
+display(invert(normalizeWRI(WGI_2023_pv_dataMap)))
+```
+
+**`WGI_rl - Rule of Law`**
+
+
+```js
+const WGI_2023_rl = wgidataset_year_indicator_grouped_2023.get("rl");
+display(WGI_2023_rl)
+```
+
+```js
+const WGI_2023_rl_dataMap = new Map(WGI_2023_rl.map(d => [d.countryname, d["estimate"]]));
+display(WGI_2023_rl_dataMap)
+display(invert(normalizeWRI(WGI_2023_rl_dataMap)))
+```
+
+
+
+**`WGI_rq - Regulatory Quality`**
+
+```js
+const WGI_2023_rq = wgidataset_year_indicator_grouped_2023.get("rq");
+display(WGI_2023_rq)
+```
+
+```js
+const WGI_2023_rq_dataMap = new Map(WGI_2023_rq.map(d => [d.countryname, d["estimate"]]));
+display(WGI_2023_rq_dataMap)
+display(invert(normalizeWRI(WGI_2023_rq_dataMap)))
+```
+
+
+
+**`WGI_va - Voice and Accountability`**
+
+```js
+const WGI_2023_va = wgidataset_year_indicator_grouped_2023.get("va");
+display(WGI_2023_va)
+```
+
+```js
+const WGI_2023_va_dataMap = new Map(WGI_2023_va.map(d => [d.countryname, d["estimate"]]));
+display(WGI_2023_va_dataMap)
+display(invert(normalizeWRI(WGI_2023_va_dataMap)))
+```
+
 
 <br/>
 
@@ -867,6 +990,7 @@ const rol_data = rol_workbook.sheet("WJP ROL Index 2024 Scores", {
     headers: false,
     range: "A1:"
   })
+  display(rol_data)
 ```
 
 ```js
@@ -891,12 +1015,12 @@ const rol_transpose = (raw_data) => {
 
 ```js
 const rol_data_transposed = rol_transpose(rol_data)
-display(rol_data_transposed)
+//display(rol_data_transposed)
 ```
 
 ```js
 const rol_dataMap = new Map(rol_data_transposed.map(d => [d.Country, +d["WJP Rule of Law Index: Overall Score"]]));
-display(rol_dataMap)
+//display(rol_dataMap)
 ```
 
 ```js
@@ -933,13 +1057,13 @@ display(cpi_data)
 
 ```js
 const cpi_dataMap = new Map(cpi_data.map(d => [d["Country / Territory"], d["CPI 2024 score"]]));
-display(cpi_dataMap)
+//display(cpi_dataMap)
 ```
 
 
 ```js
 const cpi_dataMap_inverted = invert(cpi_dataMap);
-display(cpi_dataMap)
+display(cpi_dataMap_inverted )
 ```
 
 
@@ -947,8 +1071,6 @@ display(cpi_dataMap)
 <br/>
 
 **`Bertelsmann Transformation Index (BTI) =`**
-
-<mark>!!!</mark>
 
 ```js
 const bti_workbook = FileAttachment("/data/external/BTI_2024_Scores.xlsx").xlsx()
@@ -974,22 +1096,29 @@ const bti_data_keyed = bti_data.map(entry => {
     ...rest
   };
 });
-display(bti_data_keyed)
 ```
+
+
+```js
+const bti_dataMap_governance_inverted = invert(bti_dataMap_governance);
+//display(bti_dataMap_governance_inverted)
+```
+
+
 
 ```js
 const bti_dataMap_governance = new Map(bti_data_keyed.map(d => [d.Country, +d["  G | Governance Index"]]));
-display(bti_dataMap_governance)
+display(invert(bti_dataMap_governance))
 ```
 
 ```js
 const bti_dataMap_democracy = new Map(bti_data_keyed.map(d => [d.Country, +d["  SI | Democracy Status"]]));
-display(bti_dataMap_democracy)
+display(invert(bti_dataMap_democracy))
 ```
 
 ```js
 const bti_dataMap_economy = new Map(bti_data_keyed.map(d => [d.Country, +d["  SII | Economy Status"]]));
-display(bti_dataMap_economy)
+display(invert(bti_dataMap_economy))
 ```
 
 
@@ -997,10 +1126,6 @@ display(bti_dataMap_economy)
 <br/>
 
 **`Fragile States Index (FSI) =`**
-
-
-
-<mark>!!!</mark>
 
 
 ```js
@@ -1015,13 +1140,20 @@ const fsi_data = fsi_workbook.sheet(0, {
   display(fsi_data)
 ```
 
-<mark>!!!</mark>
-
 ```js
 const fsi_score_map = new Map(fsi_data.map(d => [d.Country.trim(), +d["Total"]])); // "Total" = FSI score;
-  display(fsi_score_map)
+//display(fsi_score_map)
 ```
 
+```js
+const fsi_score_map_normalized = new Map(
+  (() => {
+    const scores = Array.from(fsi_score_map.values()), min = Math.min(...scores), max = Math.max(...scores);
+    return [...fsi_score_map.entries()].map(([c, s]) => [c, +(((s - min) / (max - min)) * 100).toFixed(2)]);
+  })()
+);
+display(fsi_score_map_normalized)
+```
 
 
 
@@ -1036,11 +1168,11 @@ const esgProvider_dataIndex = new Map([
   ["Freedom Index by Country", freedom_index_risk_map_normalized_inverted],
   ["Global Slavery Index (GSI)", globalSlavery_dataMap],
   ["Gender Inequality Index (GII) 2023", gii2023_dataMap_normalized],
-  ["Worldwide Governance Indicators (WGI)", wgidata],
+  ["Worldwide Governance Indicators (WGI)", invert(normalizeWRI(WGI_2023_ge_dataMap))],
   ["Rule of Law Index (RL)", rol_dataMap_normalized_inverted],
   ["Corruption Perceptions Index (CPI)", cpi_dataMap_inverted],
-  ["Bertelsmann Transformation Index (BTI) - Governance", bti_dataMap_governance],
-  ["Fragile States Index (FSI)", fsi_score_map]
+  ["Bertelsmann Transformation Index (BTI) - Governance", bti_dataMap_governance_inverted],
+  ["Fragile States Index (FSI)", fsi_score_map_normalized]
 ]);
 ```
 
@@ -1079,7 +1211,7 @@ G: [
 ---
 
 
-The model can be adapt to evaluate one or a custom selection of indices across pillars pillars:
+The model can be adapt to evaluate one or a custom selection of indices across pillars:
 
 
 **`Environmental` <code>[${selected_provider_E.length}]</code>**
@@ -1311,11 +1443,6 @@ function computeCompositeESGScore(pillarScores) {
 
 
 
-
-
-
-
-
 <br/>
 
 
@@ -1352,6 +1479,15 @@ const active_projects_ES_risk_numeric_CRI = compositeCountryRiskIndex(active_pro
 ```
 
 
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'active_projects_ES_risk_numeric_CRI.csv', 'Download E&S Risk - CRI (numeric)');
+})(active_projects_ES_risk_numeric_CRI));
+```
+
+
+
 
 ---
 
@@ -1374,7 +1510,6 @@ const omega = view(Inputs.range([0.1,0.9], {step: 0.1, value: 0.3}))
 
 **Step 3 Output: Portfolio data including country-adjusted ESRS** 
 
-
 Portfolio P with composite `CRI` values and country-adjusted `ESRS` scores:</sub> 
 
 
@@ -1389,6 +1524,13 @@ display(ESRS_countryAdjusted)
 
 
 
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'ESRS_countryAdjusted.csv', 'Download ESRS - Country Adjusted');
+})(ESRS_countryAdjusted));
+```
+
 
 
 ---
@@ -1398,7 +1540,7 @@ display(ESRS_countryAdjusted)
 ## Step 4. Red Flags and Risk Mitigants
 
 <br/>
-Projects can annotated with additional contextual risk data to dynamically modify factored scores based on up-to-date intelligence.  Available contextual modifiers and values are:
+Projects can be annotated with additional contextual risk data to dynamically modify factored scores based on up-to-date intelligence.  Available contextual modifiers and values are:
 
 |Modifier|Value|
 |---|---|
@@ -1501,7 +1643,9 @@ display(iesc_reporting)
 
 
 ---
-**<mark>Step 4 Output</mark>** 
+**Step 4 Output** 
+  
+**<mark>Portfolio with Flag-Adjusted ESG risk scores</mark>** 
   
 
 
@@ -1538,7 +1682,7 @@ function writeContextValue_example(data) {
 ```
 
 
-```js echo
+```js
 function writeContextValue(data) {
   return data.map(d => {
     const offsets = [
@@ -1636,6 +1780,9 @@ Projects are segmented into three monitoring priority tiers based on final score
 |Desk Monitoring|Next 24 projects|
 |No Monitoring|Remaining projects|
 
+---
+
+<br/>
 
 ### Site Monitoring
 
@@ -1643,12 +1790,32 @@ Projects are segmented into three monitoring priority tiers based on final score
 Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring"))
 ```
 
-### Desk Monitoring 
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'active_projects_ESG_risk_top_segment.csv', 'Download Top Segment for Site Monitoring');
+})(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring")));
+```
+<br/>
+
+### Desk Monitoring / Special Consideration 
 
 ```js
 Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for enhanced desk monitoring"))
 ```
 
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'active_projects_ESG_risk_top_segment.csv', 'Download Middle Segment for Desk Monitoring');
+})(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for enhanced desk monitoring")));
+```
+
+<br/>
+
+### Not Prioritized 
 
 ```js
 Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "standard monitoring"))
@@ -2179,4 +2346,40 @@ const flagged_2023_projects = filterBy008FlagAndYear(projects_with_ES_outcomes_f
 display(flagged_2022_projects);
 // or
 display(flagged_2023_projects);
+```
+
+---
+
+
+
+```js
+import {download} from "/components/download.js";
+```
+
+
+```js
+function serialize (data) {
+ let s = JSON.stringify(data);
+ return new Blob([s], {type: "application/json"}) 
+}
+```
+
+
+
+```js
+display(download(serialize(flagged_2023_projects), "flagged_2023_projects", "Download Flagged 2024 Projects [JSON]"))
+```
+
+```js
+const downloadCSV = (data, filename = 'flagged_2023_projects.csv') => {
+  let downloadData = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  
+  const button = download(
+    downloadData,
+    filename,
+    `Download Flagged 2024 Projects [CSV]`
+  );
+  return button;
+};
+display(downloadCSV(flagged_2023_projects))
 ```
