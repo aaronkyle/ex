@@ -69,7 +69,7 @@ async function saveData_insight_all_projects(data) {
 
 ```js
 // needed to correctly initialize the chart
-const template_data_insight_all_projects = FileAttachment("/data/all_projects_template_minimal.csv").csv()
+const template_data_insight_all_projects = FileAttachment("/data/internal/all_projects_template_minimal.csv").csv()
 ```
 
 ```js
@@ -113,6 +113,218 @@ const load_template_data_insight_all_projects = Inputs.button("Reset Template", 
 
 
 
+```js
+const local_file_insight_outcomes_survey = view(Inputs.file({accept: ".csv"}));
+```
+
+
+```js
+// IndexedDB Setup
+const dbName_insight_outcomes_survey  = "insight_outcomes_survey";
+const dbVersion_insight_outcomes_survey  = 1;
+const storeName_insight_outcomes_survey  = "insight_all";
+```
+
+```js
+// Function to open or create IndexedDB
+async function openDB_insight_outcomes_survey () {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName_insight_outcomes_survey , dbVersion_insight_outcomes_survey );
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(storeName_insight_outcomes_survey , { keyPath: "id" });
+        };
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to get data from IndexedDB
+async function getData_insight_outcomes_survey () {
+    const db = await openDB_insight_outcomes_survey();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_outcomes_survey , "readonly");
+        const store = transaction.objectStore(storeName_insight_outcomes_survey );
+        const request = store.get("state_data_insight_outcomes_survey");
+        
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_outcomes_survey);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to save data to IndexedDB
+async function saveData_insight_outcomes_survey(data) {
+    const db = await openDB_insight_outcomes_survey();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_outcomes_survey, "readwrite");
+        const store = transaction.objectStore(storeName_insight_outcomes_survey);
+        store.put({ id: "state_data_insight_outcomes_survey", data });
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+```
+
+
+```js
+// needed to correctly initialize the chart
+const template_data_insight_outcomes_survey = FileAttachment("/data/internal/outcomes_survey_template_minimal.csv").csv()
+```
+
+```js
+/// Initialize state_data with IndexedDB or template data
+let state_data_insight_outcomes_survey = Mutable(await getData_insight_outcomes_survey ());
+
+function swap_data_insight_outcomes_survey(data) {
+  state_data_insight_outcomes_survey.value = data;
+}
+
+(async function(d) {
+    return d === null ? "pending file selection" : state_data_insight_outcomes_survey.value = await d.json();
+})(local_file_insight_outcomes_survey);
+```
+
+
+```js
+// removing view here temporarily
+const load_template_data_insight_outcomes_survey = Inputs.button("Reset Template", {reduce: () => swap_data_insight_outcomes_survey(template_data_insight_outcomes_survey)})
+```
+
+
+```js
+ const report_insight_outcomes_survey  = (async () => {////
+  try {
+    return await local_file_insight_outcomes_survey.csv();
+  } catch (error) {
+    console.warn("error with file", error);
+    return state_data_insight_outcomes_survey;
+  }
+})();
+
+```
+
+
+
+```js
+// Optional auto-persist
+ await saveData_insight_outcomes_survey(report_insight_outcomes_survey);
+```
+
+
+```js
+const local_file_insight_trips_w_visits = view(Inputs.file({accept: ".csv"}));
+```
+
+
+```js
+// IndexedDB Setup
+const dbName_insight_trips_w_visits  = "insight_trips_w_visits";
+const dbVersion_insight_trips_w_visits  = 1;
+const storeName_insight_trips_w_visits  = "insight_all";
+```
+
+```js
+// Function to open or create IndexedDB
+async function openDB_insight_trips_w_visits () {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName_insight_trips_w_visits , dbVersion_insight_trips_w_visits );
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(storeName_insight_trips_w_visits , { keyPath: "id" });
+        };
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to get data from IndexedDB
+async function getData_insight_trips_w_visits () {
+    const db = await openDB_insight_trips_w_visits();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_trips_w_visits , "readonly");
+        const store = transaction.objectStore(storeName_insight_trips_w_visits );
+        const request = store.get("state_data_insight_trips_w_visits");
+        
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_trips_w_visits);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to save data to IndexedDB
+async function saveData_insight_trips_w_visits(data) {
+    const db = await openDB_insight_trips_w_visits();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_trips_w_visits, "readwrite");
+        const store = transaction.objectStore(storeName_insight_trips_w_visits);
+        store.put({ id: "state_data_insight_trips_w_visits", data });
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+```
+
+
+```js
+// needed to correctly initialize the chart
+const template_data_insight_trips_w_visits = FileAttachment("/data/internal/trips_w_visits_template_minimal.csv").csv()
+```
+
+```js
+/// Initialize state_data with IndexedDB or template data
+let state_data_insight_trips_w_visits = Mutable(await getData_insight_trips_w_visits ());
+
+function swap_data_insight_trips_w_visits(data) {
+  state_data_insight_trips_w_visits.value = data;
+}
+
+(async function(d) {
+    return d === null ? "pending file selection" : state_data_insight_trips_w_visits.value = await d.json();
+})(local_file_insight_trips_w_visits);
+```
+
+
+```js
+// removing view here temporarily
+const load_template_data_insight_trips_w_visits = Inputs.button("Reset Template", {reduce: () => swap_data_insight_trips_w_visits(template_data_insight_trips_w_visits)})
+```
+
+
+```js
+ const report_insight_trips_w_visits  = (async () => {////
+  try {
+    return await local_file_insight_trips_w_visits.csv();
+  } catch (error) {
+    console.warn("error with file", error);
+    return state_data_insight_trips_w_visits;
+  }
+})();
+
+```
+
+
+
+```js
+// Optional auto-persist
+ await saveData_insight_trips_w_visits(report_insight_trips_w_visits);
+```
+
+
+
+
 
 
 ```js
@@ -121,12 +333,12 @@ display(active_projects )
 ```
 
 ```js
-const outcomes_survey = await FileAttachment("/data/internal/outcomes_survey.csv").csv()
+const outcomes_survey = report_insight_outcomes_survey
 ```
 
 ```js
 const 
-trips_with_visits = await FileAttachment("/data/internal/trips-w-project-visits_report1754574558556.csv").csv()
+trips_with_visits = report_insight_trips_w_visits
 ```
 
 ---
@@ -275,7 +487,7 @@ display((data => {
 
 <br/>
 
-The Country Risk Index (CRI) is derived from [external global ESG risk indices](/indices/contextual-risk-indices.html) and combined into a single, composite ESG score.
+The Country Risk Index (CRI) is derived from [external global ESG risk indices](/indices/contextual-risk-indices) and combined into a single, composite ESG score.
 
 Reference available in the model are:
 
