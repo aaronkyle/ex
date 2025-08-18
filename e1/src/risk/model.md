@@ -3,12 +3,130 @@
 This document defines a model for transparently and generatively calculating project E&S risk scores and for portfolio segmentation into risk-based monitoring tiers: site visit required, enhanced desk-based monitoring, and non-priority. The model evaluates project E&S risk categories, country risk as derived from multi-dimensional ESG scores, and institutionally-defined risk parameters reflective of project-specific red flags and/or risk mitigants. 
 
 
+
+
+---
+
 ```js
-const active_projects = await FileAttachment('/data/internal/all_projects.csv').csv()
+const local_file_insight_all_projects = view(Inputs.file({accept: ".csv"}));
+```
+
+
+```js
+// IndexedDB Setup
+const dbName_insight_all_projects  = "insight_all_projects";
+const dbVersion_insight_all_projects  = 1;
+const storeName_insight_all_projects  = "insight_all";
+```
+
+```js
+// Function to open or create IndexedDB
+async function openDB_insight_all_projects () {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName_insight_all_projects , dbVersion_insight_all_projects );
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(storeName_insight_all_projects , { keyPath: "id" });
+        };
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to get data from IndexedDB
+async function getData_insight_all_projects () {
+    const db = await openDB_insight_all_projects();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_all_projects , "readonly");
+        const store = transaction.objectStore(storeName_insight_all_projects );
+        const request = store.get("state_data_insight_all_projects");
+        
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_all_projects);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to save data to IndexedDB
+async function saveData_insight_all_projects(data) {
+    const db = await openDB_insight_all_projects();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_all_projects, "readwrite");
+        const store = transaction.objectStore(storeName_insight_all_projects);
+        store.put({ id: "state_data_insight_all_projects", data });
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+```
+
+
+```js
+// needed to correctly initialize the chart
+const template_data_insight_all_projects = FileAttachment("/data/all_projects_template_minimal.csv").csv()
+```
+
+```js
+/// Initialize state_data with IndexedDB or template data
+let state_data_insight_all_projects = Mutable(await getData_insight_all_projects ());
+
+function swap_data_insight_all_projects(data) {
+  state_data_insight_all_projects.value = data;
+}
+
+(async function(d) {
+    return d === null ? "pending file selection" : state_data_insight_all_projects.value = await d.json();
+})(local_file_insight_all_projects);
+```
+
+
+```js
+// removing view here temporarily
+const load_template_data_insight_all_projects = Inputs.button("Reset Template", {reduce: () => swap_data_insight_all_projects(template_data_insight_all_projects)})
+```
+
+
+```js
+ const report_insight_all_projects  = (async () => {////
+  try {
+    return await local_file_insight_all_projects.csv();
+  } catch (error) {
+    console.warn("error with file", error);
+    return state_data_insight_all_projects;
+  }
+})();
+
+```
+
+
+
+```js
+// Optional auto-persist
+ await saveData_insight_all_projects(report_insight_all_projects);
+```
+
+
+
+
+
+```js
+const active_projects = report_insight_all_projects;
+display(active_projects )
 ```
 
 ```js
 const outcomes_survey = await FileAttachment("/data/internal/outcomes_survey.csv").csv()
+```
+
+```js
+const 
+trips_with_visits = await FileAttachment("/data/internal/trips-w-project-visits_report1754574558556.csv").csv()
 ```
 
 ---
@@ -167,9 +285,12 @@ Reference available in the model are:
   - [ND-GAIN Index](https://gain.nd.edu/our-work/country-index/)
 
 **Social**
+  - DOL Worker & Human Rights Country List
   - [Global Rights Index](https://www.ituc-csi.org/global-rights-index)
   - [Freedom in the World Index](https://freedomhouse.org/report/freedom-world)
   - [Freedom Index by Country](https://worldpopulationreview.com/country-rankings/freedom-index-by-country)
+  - [Georgetown Women, Peace and Security Index (GIWPS)](https://giwps.georgetown.edu/the-index/)
+  - [Equilo GBV Risk Score](https://www.criterioninstitute.org/resources/gender-based-violence-risk-score)
   - [Global Slavery Index](https://www.globalslaveryindex.org/)
   - [Gender Inequality Index (GII)](https://hdr.undp.org/data-center/thematic-composite-indices/gender-inequality-index)
   
@@ -365,9 +486,54 @@ const epiMap_risk_map_inverted = invert(epiMap_risk_map)
 
 
 
-<br/>
+</br>
+</br>
 
 #### Social Indices
+
+
+<br/>
+
+**`DOL Worker & Human Rights Country List =`**
+
+
+```js
+const DOL_workers_rights_workbook = await FileAttachment("/data/sensitive/Worker & Human Rights Country List_2.4.2025_master_list_2024.xlsx").xlsx()
+```
+
+```js
+//display(DOL_workers_rights_workbook)
+```
+
+```js
+const DOL_workers_rights_data = DOL_workers_rights_workbook.sheet("MASTER LIST", {headers: true});
+display(DOL_workers_rights_data)
+```
+
+
+```js
+const DOL_workers_rights_map = new Map(DOL_workers_rights_data.map(d => [d.Name, d["https://dfcgov.sharepoint.com/sites/ODPAll/Shared%20Documents/Forms/AllItems.aspx?csf=1&web=1&e=fJ1FWZ&siteid=%7B84DD6FA1%2DA25D%2D45D5%2DA654%2D21BC1F0BDF75%7D&webid=%7B00E7D5CD%2DF6CA%2D4CD6%2DBABE%2DC23163ADB01E%7D&uniqueid=%7BDDED5E93%2D6D35%2D5A3E%2D DRL (7/24)"]]));
+display(DOL_workers_rights_map);
+```
+
+```js
+function normalize_DOL(map) {
+  const mapping = {
+    "Less Sensitive": 33.333,
+    "Sensitive": 66.666,
+    "More Sensitive": 99.999,
+    "No Rating - Suspended": "",
+    "No Rating - Closed": ""
+  };
+  return new Map(
+    [...map].map(([k, v]) => [k, mapping[v] ?? ""])
+  );
+}
+```
+
+```js
+display(normalize_DOL(DOL_workers_rights_map))
+```
 
 <br/>
 
@@ -732,12 +898,49 @@ const globalSlavery_dataMap = new Map(globalSlaveryIndex_data.map(d => [d.Countr
 display(globalSlavery_dataMap)
 ```
 
+
+<br/>
+
+**`GBVH Risk Screening - Country Context = `**
+
+
+```js
+const gbvh_screening_workbook = await FileAttachment("/data/sensitive/GBVH Risk Screening Tool v.3.xlsx").xlsx()
+```
+
+```js
+const gbvh_screening_data = gbvh_screening_workbook.sheet("Country Context - All Projects", {
+    headers: true,
+    range: "A4:"
+  });
+display(gbvh_screening_data)
+```
+
+**`Georgetown Women, Peace and Security Index (GIWPS)`**
+
+```js
+const giwps_map = new Map(gbvh_screening_data.map(d => [d["Country Name"], d["WPS Index "]]));
+display(giwps_map);
+display(invert(normalize(giwps_map)))
+```
+
+
+
+**`Equilo GBV Risk Score`**
+
+```js
+const equilo_map = new Map(gbvh_screening_data.map(d => [d["Country Name"], d["Equilo Index "]]));
+display(equilo_map)
+```
+
+
+
 <br/>
 
 **`Gender Inequality Index (GII) =`**
 
 ```js
-const gii_workbook = FileAttachment("/data/external/HDR25_Statistical_Annex_GII_Table.xlsx").xlsx()
+const gii_workbook = await FileAttachment("/data/external/HDR25_Statistical_Annex_GII_Table.xlsx").xlsx()
 ```
 
 ```js
@@ -825,7 +1028,7 @@ display(gii2023_dataMap_normalized)
 
 
 
-
+</br>
 <br/>
 
 #### Governance Indices
@@ -1160,6 +1363,7 @@ display(fsi_score_map_normalized)
 ```js
 // for ease of reference, an index of all index of data providers by name and dataset
 const esgProvider_dataIndex = new Map([
+  ["DOL Labor Rights 2024", normalize_DOL(DOL_workers_rights_map)],
   ["World Risk Index 2024 (Environmental)", worldriskindex24_risk_map],
   ["Environmental Performance Index (EPI)", epiMap_risk_map_inverted],
   ["ND-GAIN 2025 (Climate Risk)", nd_gain2025_risk_map],
@@ -1167,6 +1371,8 @@ const esgProvider_dataIndex = new Map([
   ["Freedom in the World Index - PR", FIW_prMap],
   ["Freedom Index by Country", freedom_index_risk_map_normalized_inverted],
   ["Global Slavery Index (GSI)", globalSlavery_dataMap],
+  ["Georgetown Women, Peace and Security Index (GIWPS)", invert(normalize(giwps_map))],
+  ["Equilo GBV Risk Score", equilo_map],
   ["Gender Inequality Index (GII) 2023", gii2023_dataMap_normalized],
   ["Worldwide Governance Indicators (WGI)", invert(normalizeWRI(WGI_2023_ge_dataMap))],
   ["Rule of Law Index (RL)", rol_dataMap_normalized_inverted],
@@ -1190,10 +1396,13 @@ E: [
 ],
 
 S: [
+"DOL Labor Rights 2024",
 "Global Rights Index 2025 - Social Risk", //
 "Freedom in the World Index - PR",
 "Freedom Index by Country", //
 "Global Slavery Index (GSI)", //
+"Georgetown Women, Peace and Security Index (GIWPS)",
+"Equilo GBV Risk Score",
 "Gender Inequality Index (GII) 2023" //
 
 ],
@@ -1535,9 +1744,385 @@ display((data => {
 
 ---
 
+## Step 4. Sector Risk Ratings
+
+EBRD has created sector risk ratings for further contextual nuance.
+
+```js
+const EBRD_sector_risk_workbook = await FileAttachment("/data/external/ESMS-ESMS--Policies-and-procedures--categorisation-Annex-1- Rev2.1 FINAL.xlsx").xlsx()
+```
+
+```js
+const sector_risk = EBRD_sector_risk_workbook.sheet(0, {range: "A2:", headers: true})
+```
+
+```js
+const nace2_isic4 = await FileAttachment("/data/external/NACE2_ISIC4.txt").csv()
+```
+
+```js
+const naics_isic_wb = await FileAttachment("/data/external/2017_NAICS_to_ISIC_4.xlsx").xlsx()
+```
+
+```js
+const naics_isic_rows = naics_isic_wb.sheet(0, { headers: true })
+```
+
+```js
+const isic_nace = await FileAttachment("/data/external/ISIC4_NACE2.txt").csv({ typed: false })
+```
+
+```js
+const onlyDigits = (v) => (v ?? "").toString().replace(/\D+/g, "");
+```
+
+```js
+function normalizeNaicsAny(row) {
+  const a = onlyDigits(row["NAICS Code"]);
+  const b = onlyDigits(row["NAICS_Sector_Code"]);
+  // prefer the most specific we see across both columns
+  const candidates = [a, b].filter(Boolean);
+  if (candidates.length === 0) return "";
+  // choose the longest code available, capped to 6 digits
+  const best = candidates.sort((x,y)=>y.length-x.length)[0].slice(0,6);
+  // return 6,3,2 options that exist
+  return [6,3,2].map(n => best.length >= n ? best.slice(0,n) : null).filter(Boolean);
+}
+```
+
+```js
+// === 4) BUILD NAICS→ISIC (from 2017_NAICS_to_ISIC_4.xlsx) ===
+const naicsCol = Object.keys(naics_isic_rows[0] ?? {}).find(k => /naics/i.test(k)) ?? "NAICS";
+const isicCol  = Object.keys(naics_isic_rows[0] ?? {}).find(k => /isic/i.test(k))  ?? "ISIC";
+```
+
+```js
+const compactIsic = (c) => (c ?? "").toString().replace(/\D+/g, "");
+const compactNace = (c) => (c ?? "").toString().replace(/\s+/g, "");
+```
+
+```js
+// === 3) BUILD ISIC→NACE (from ISIC4_NACE2.txt) ===
+// Map ISIC(compact) -> Set of NACE codes (keep dotted form if present in file)
+const naceByIsic = (() => {
+  const m = new Map();
+  for (const r of isic_nace) {
+    const isic = compactIsic(r.ISIC4code);
+    const nace = (r.NACE2code ?? "").toString(); // keep dotted form
+    if (!isic || !nace) continue;
+    if (!m.has(isic)) m.set(isic, new Set());
+    m.get(isic).add(nace);
+  }
+  return m;
+})();
+```
+
+```js
+// Map NAICS prefix (2/3/6) -> Set of ISIC(compact)
+const isicByNaicsPrefix = (() => {
+  const m = new Map();
+  for (const r of naics_isic_rows) {
+    const naics = onlyDigits(r[naicsCol]);
+    const isic  = compactIsic(r[isicCol]);
+    if (!naics || !isic) continue;
+    // register 2-, 3-, and 6-digit keys for each NAICS row (when available)
+    for (const n of [2,3,6]) {
+      if (naics.length >= n) {
+        const key = naics.slice(0,n);
+        if (!m.has(key)) m.set(key, new Set());
+        m.get(key).add(isic);
+      }
+    }
+  }
+  return m;
+})();
+```
+
+```js
+// === 5) NAICS→NACE LOOKUP (compose via ISIC) ===
+function isicToNaceSet(isicCompact) {
+  if (!isicCompact) return new Set();
+  if (naceByIsic.has(isicCompact)) return new Set(naceByIsic.get(isicCompact));
+  // fallback: try shorter ISIC prefixes (e.g., "01" -> all NACE under "01.*")
+  const out = new Set();
+  for (let len = isicCompact.length - 1; len >= 1; len--) {
+    const p = isicCompact.slice(0, len);
+    for (const [k, set] of naceByIsic.entries()) {
+      if (k.startsWith(p)) for (const v of set) out.add(v);
+    }
+    if (out.size) break;
+  }
+  return out;
+}
+```
+
+```js
+const NACE_LOOKUP = (() => {
+  const m = new Map();
+  for (const [naicsPrefix, isicSet] of isicByNaicsPrefix.entries()) {
+    const out = new Set();
+    for (const isic of isicSet) {
+      for (const nace of isicToNaceSet(isic)) out.add(nace);
+    }
+    m.set(naicsPrefix, out);
+  }
+  return m;
+})();
+```
+
+```js
+function lookupNACEForProject(input) {
+  // allow either a row or a raw code
+  const naicsVariants = typeof input === "object" && input !== null
+    ? normalizeNaicsAny(input)
+    : normalizeNaicsAny({ "NAICS Code": input, "NAICS_Sector_Code": input });
+
+  const out = new Set();
+  for (const k of naicsVariants) {
+    const set = NACE_LOOKUP.get(k);
+    if (set) for (const v of set) out.add(v);
+  }
+  return [...out].sort();
+}
+```
+
+```js
+const naics_to_nace_table = (() => {
+  const rows = [];
+  for (const k of [...NACE_LOOKUP.keys()].sort()) {
+    rows.push({
+      NAICS_prefix: k,
+      NACE_codes: [...NACE_LOOKUP.get(k)].sort().join(", ")
+    });
+  }
+  return rows;
+})();
+```
+
+```js
+const pickCol = (row, re, fallback) =>
+  Object.keys(row ?? {}).find(k => re.test(k)) ?? fallback;
+```
+
+
+```js
+function buildSectorRiskIndex(rows) {
+  if (!rows?.length) return new Map();
+  const sample = rows[0];
+
+  const naceCol = pickCol(sample, /nace/i, "NACE Code");
+  const envCol  = pickCol(sample, /env/i,  "environment");
+  const socCol  = pickCol(sample, /soc/i,  "social");
+  const allCol  = pickCol(sample, /overall|total|composite/i, "overall");
+
+  const labelToScore = (v) => {
+    if (v == null) return {score: null, label: null};
+    const s = String(v).trim();
+    const n = Number(s);
+    if (!Number.isNaN(n)) return {score: n, label: s};
+    const table = new Map([
+      [/^very\s*low$/i, 1],
+      [/^low$/i, 1],
+      [/^low-?medium$/i, 1.5],
+      [/^medium-?low$/i, 1.5],
+      [/^medium$|^med$/i, 2],
+      [/^medium-?high$|^high-?medium$/i, 2.5],
+      [/^high$/i, 3],
+      [/^very\s*high$/i, 4]
+    ]);
+    for (const [re, val] of table) if (re.test(s)) return {score: val, label: s};
+    return {score: 0, label: s}; // unknown text
+  };
+
+  const idx = new Map();
+  for (const r of rows) {
+    const nace = r?.[naceCol];
+    if (!nace) continue;
+    const rec = {
+      environment: labelToScore(r?.[envCol]),
+      social:      labelToScore(r?.[socCol]),
+      overall:     labelToScore(r?.[allCol])
+    };
+    const keys = [
+      String(nace).trim(),
+      String(nace).trim().replace(/\W+/g, "")
+    ];
+    for (const k of keys) {
+      if (!k) continue;
+      const prev = idx.get(k);
+      if (!prev) idx.set(k, rec);
+      else {
+        // keep higher risk for duplicates (conservative)
+        idx.set(k, {
+          environment: (prev.environment.score ?? 0) >= (rec.environment.score ?? 0) ? prev.environment : rec.environment,
+          social:      (prev.social.score ?? 0)      >= (rec.social.score ?? 0)      ? prev.social      : rec.social,
+          overall:     (prev.overall.score ?? 0)     >= (rec.overall.score ?? 0)     ? prev.overall     : rec.overall
+        });
+      }
+    }
+  }
+  return idx;
+}
+```
+
+```js
+const SECTOR_RISK_INDEX = buildSectorRiskIndex(sector_risk)
+```
+
+
+```js
+// Prefer the more granular NAICS Code, then fall back to NAICS_Sector_Code
+function naicsVariantsPreferDetailed(row) {
+  const detailed = onlyDigits(row["NAICS Code"]);
+  const broad    = onlyDigits(row["NAICS_Sector_Code"]);
+
+  // Build candidate prefixes in order of preference:
+  // 1) detailed (6, then 3, then 2), then 2) broad (6/3/2 if present)
+  const prefixes = [];
+  if (detailed) for (const n of [6,3,2]) if (detailed.length >= n) prefixes.push(detailed.slice(0,n));
+  if (broad)    for (const n of [6,3,2]) if (broad.length    >= n) prefixes.push(broad.slice(0,n));
+
+  // de-dup while preserving order
+  return [...new Set(prefixes)];
+}
+
+```
+
+
+
+```js
+// === 7) NACE KEY FALLBACKS: granular → parents (e.g., "64.19" → "64.1" → "64") ===
+function candidateNaceKeys(code) {
+  const raw = String(code ?? "").trim();
+  if (!raw) return [];
+  const dotted  = raw.replace(/[^\d.]/g, ""); // keep digits + dots
+  const compact = dotted.replace(/\./g, "");
+  const out = [];
+  const push = (k) => { if (k && !out.includes(k)) out.push(k); };
+
+  push(dotted); // exact dotted
+  push(compact); // exact compact
+
+  if (dotted.includes(".")) {
+    const parts = dotted.split(".");
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const d = parts.slice(0, i).join(".");
+      push(d);
+      push(d.replace(/\./g, ""));
+    }
+  }
+
+  if (compact.length > 2) {
+    for (let l = compact.length - 1; l >= 2; l--) {
+      const c = compact.slice(0, l);
+      const d2 = c.length > 2 ? `${c.slice(0,2)}.${c.slice(2)}` : c;
+      push(d2);
+      push(c);
+    }
+  }
+
+  push(compact.slice(0, 2)); // ensure division-level present
+  return out;
+}
+
+```
+
+
+
+
+```js
+function mostSpecificRiskForNace(code, index = SECTOR_RISK_INDEX) {
+  for (const key of candidateNaceKeys(code)) {
+    const rec = index.get(key);
+    if (rec) return { keyMatched: key, rec };
+  }
+  return { keyMatched: null, rec: null };
+}
+
+```
+
+
+
+
+```js
+// Aggregate across many NACE: take the max risk found (conservative).
+function riskForNaceSet(naceList, index = SECTOR_RISK_INDEX) {
+  let best = {
+    environment: { score: -Infinity, label: null },
+    social:      { score: -Infinity, label: null },
+    overall:     { score: -Infinity, label: null }
+  };
+  const usedKeys = [];
+
+  for (const code of naceList ?? []) {
+    const { keyMatched, rec } = mostSpecificRiskForNace(code, index);
+    if (!rec) continue;
+    usedKeys.push(`${code}→${keyMatched}`);
+    if ((rec.environment.score ?? -Infinity) > (best.environment.score ?? -Infinity)) best.environment = rec.environment;
+    if ((rec.social.score ?? -Infinity)      > (best.social.score ?? -Infinity))      best.social      = rec.social;
+    if ((rec.overall.score ?? -Infinity)     > (best.overall.score ?? -Infinity))     best.overall     = rec.overall;
+  }
+
+  const clean = (x) => (x.score === -Infinity ? null : x.label);
+  return {
+    environment: clean(best.environment),
+    social:      clean(best.social),
+    overall:     clean(best.overall),
+    _risk_keys_used: usedKeys.join(", ")
+  };
+}
+```
+
+
+
+
+```js
+// === 8) NAICS→NACE FOR A ROW ===
+function getPreferredNaceSet(row) {
+  for (const p of naicsVariantsPreferDetailed(row)) {
+    const s = NACE_LOOKUP.get(p);
+    if (s && s.size) return { usedNaicsPrefix: p, nace: [...s].sort() };
+  }
+  return { usedNaicsPrefix: null, nace: [] };
+}
+```
+
+
+```js
+// === 9) FINAL: annotate each project with environment/social/overall ===
+const portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk = ESRS_countryAdjusted.map(row => {
+  const { usedNaicsPrefix, nace } = getPreferredNaceSet(row);
+  const risks = riskForNaceSet(nace);
+
+  return {
+    ...row,
+    _naics_used_for_lookup: usedNaicsPrefix ?? null,
+    _nace_matched: nace.join(", ") || null,
+    _nace_risk_keys_used: risks._risk_keys_used || null, // e.g., "64.19→64"
+    EBRD_sector_risk_environment: risks.environment,
+    EBRD_sector_risk_social:      risks.social,
+    EBRD_sector_risk_overall:     risks.overall
+  };
+});
+
+```
+
+
+
+
 <br/>
 
-## Step 4. Red Flags and Risk Mitigants
+**Step 4 Output: Portfolio data including Sector Risk Ratings** 
+
+```js
+display(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk)
+```
+
+---
+
+<br/>
+
+## Step 5. Red Flags and Risk Mitigants
 
 <br/>
 Projects can be annotated with additional contextual risk data to dynamically modify factored scores based on up-to-date intelligence.  Available contextual modifiers and values are:
@@ -1643,15 +2228,13 @@ display(iesc_reporting)
 
 
 ---
-**Step 4 Output** 
-  
-**<mark>Portfolio with Flag-Adjusted ESG risk scores</mark>** 
+**Step 5 Output :** **<mark>Portfolio with Flag-Adjusted ESG risk scores</mark>** 
   
 
 
 ```js
 const ESRScontext = writeContextValue_example(ESRS_countryAdjusted);
-display(ESRScontext[0]["context_score"])
+//display(ESRScontext[0]["context_score"])
 ```
 
 ```js
@@ -1710,13 +2293,652 @@ function writeContextValue(data) {
 ```
 
 
+**`Portfolio with 008 Flags`**
+
+
+```js
+display(projects_with_ES_outcomes);
+```
+
+
+```js
+let outcomes_survey_year_selection_input = Inputs.select(
+  ["2022","2023"],
+  //fiscal_years,
+  {
+  label: "Select a Year",
+  value: "2023"
+  }
+)
+
+let outcomes_survey_year_selection = Inputs.bind(Inputs.select(
+  ["2022","2023"],
+  //fiscal_years,
+  {
+  label: "Select a Year",
+  value: "2023"
+  }
+), outcomes_survey_year_selection_input)
+```
+
+```js
+const outcomes_survey_year_select = Generators.input(outcomes_survey_year_selection);
+```
+
+<br/>
+
+Quickly browse the 008 Data by year:
+
+```js
+Inputs.bind(Inputs.select(
+  ["2022","2023"],
+  //fiscal_years,
+  {
+  width: "40px",
+  value: "2023",
+  }
+), outcomes_survey_year_selection)
+```
+
+
+```js
+const outcomes_survey_by_year = outcomes_survey.filter(d => d["Application: Fiscal Year"] == outcomes_survey_year_select);
+```
+
+
+```js
+view(Inputs.table(outcomes_survey_by_year, {
+  columns: [
+    "Project Name",
+    
+    "Form 007/008: Form 007/008 Name",
+    "Application: Application Number",
+    "Project In Compliance",
+    "Project Worker Layoffs",
+    "Accidents Occurred",
+    "Changes To Workforce",
+    "Community Strike Or Opposition",
+    "Disputes With Trade Union",
+    "Gender-Based Violence",
+    "# Households Economically Displaced",
+    "# Households Physically Displaced",
+    "Project Cited Or Fined",
+    "Project Design Change",
+    "Project Involved In Dispute Resolution",
+    "Project Engaged With Communities",
+    "Project Involve Land Acquisition",
+    "Strikes Or Labor Disputes",
+    "# Of Workers Laid Off",
+    "# Workers Laid Off"
+  ],
+  header: {
+    "Project Name": "Project Name",
+    "Application: Application Number": "Application Number",
+    "Form 007/008: Form 007/008 Name": "Form 008 Name",
+    "Project In Compliance": "Project In Compliance",
+    "Project Worker Layoffs": "Project Worker Layoffs",
+    "Accidents Occurred": "Accidents Occurred",
+    "Changes To Workforce": "Changes To Workforce",
+    "Community Strike Or Opposition": "Community Strike Or Opposition",
+    "Disputes With Trade Union": "Disputes With Trade Union",
+    "Gender-Based Violence": "Gender-Based Violence",
+    "# Households Economically Displaced": "# Households Economically Displaced",
+    "# Households Physically Displaced": "# Households Physically Displaced",
+    "Project Cited Or Fined": "Project Cited Or Fined",
+    "Project Design Change": "Project Design Change",
+    "Project Involved In Dispute Resolution": "Project Involved In Dispute Resolution",
+    "Project Engaged With Communities": "Project Engaged With Communities",
+    "Project Involve Land Acquisition": "Project Involve Land Acquisition",
+    "Strikes Or Labor Disputes": "Strikes Or Labor Disputes",
+    "# Of Workers Laid Off": "# Of Workers Laid Off",
+    "# Workers Laid Off": "# Workers Laid Off"
+  },
+}))
+
+```
+
+
+
+```js
+display(outcomes_survey_by_year)
+```
+
+
+```js
+function writeOutcomesES(all_projects, outcomes_survey) {
+  const attributesToTransfer = [
+    "Form 007/008: Form 007/008 Name",
+    "Application: Application Number",
+    "Project In Compliance",
+    "Project Worker Layoffs",
+    "Accidents Occurred",
+    "Changes To Workforce",
+    "Community Strike Or Opposition",
+    "Disputes With Trade Union",
+    "Gender-Based Violence",
+    "# Households Economically Displaced",
+    "# Households Physically Displaced",
+    "Project Cited Or Fined",
+    "Project Design Change",
+    "Project Involved In Dispute Resolution",
+    "Project Engaged With Communities",
+    "Project Involve Land Acquisition",
+    "Strikes Or Labor Disputes",
+    "# Of Workers Laid Off",
+    "# Workers Laid Off"
+  ];
+
+  // Group insight report entries by project name
+  const grouped = {};
+  for (const row of outcomes_survey) {
+    const name = row["Project Name"];
+    const year = row["Application: Fiscal Year"];
+    if (!name || !year) continue;
+    if (!grouped[name]) grouped[name] = {};
+    grouped[name][year] = row;
+  }
+
+  // Now merge the grouped data into all_projects
+  return all_projects.map(project => {
+    const name = project["Project Name"];
+    const matchedByYear = grouped[name] || {};
+
+    const enriched = { ...project };
+
+    for (const [year, report] of Object.entries(matchedByYear)) {
+      for (const attr of attributesToTransfer) {
+        const key = `${attr}, ${year}`;
+        enriched[key] = report[attr] ?? null;
+      }
+    }
+
+    return enriched;
+  });
+}
+```
+
+```js
+const projects_with_ES_outcomes = writeOutcomesES(active_projects, outcomes_survey);
+```
+
+
+
+----
+
+
+```js
+const outcomes_ES_attributes = [
+  "Project In Compliance",
+  "Changes To Workforce",
+  "Project Worker Layoffs",
+  "Accidents Occurred",
+  "Strikes Or Labor Disputes",
+  "Disputes With Trade Union",
+  "Project Involve Land Acquisition",
+  "Community Strike Or Opposition",
+  "Project Engaged With Communities",
+  "Gender-Based Violence",
+  "Project Cited Or Fined",
+  "Project Involved In Dispute Resolution"
+];
+```
+
+```js
+const attributeInterpretation = {
+  "Project In Compliance": "positive_highlightColor",
+  "Project Engaged With Communities": "positive",
+  "Grievance Mechanism": "positive",
+  "Consultation": "positive",
+  "Community Engagement": "positive",
+
+  "Accidents Occurred": "negative",
+  "Changes To Workforce": "negative",
+  "Project Worker Layoffs": "negative",
+  "Strikes Or Labor Disputes": "negative",
+  "Disputes With Trade Union": "negative",
+  "Project Involve Land Acquisition": "negative",
+  "Community Strike Or Opposition": "negative",
+  "Gender-Based Violence": "negative",
+  "Project Cited Or Fined": "negative",
+  "Project Involved In Dispute Resolution": "negative"
+};
+
+```
+
+
+```js
+const attributeRegex = new RegExp(`^(${outcomes_ES_attributes.join("|")})(, \\d{4})?$`);
+```
+
+
+
+```js
+const filtered_projects_with_ES_outcomes = projects_with_ES_outcomes.filter(d =>
+  Object.keys(d).some(k => attributeRegex.test(k) && d[k] != null && d[k] !== "")
+);
+```
+
+```js
+//filtered_projects_with_ES_outcomes
+```
+
+
+
+```js
+const matchingColumns = Array.from(
+  new Set(
+    filtered_projects_with_ES_outcomes.flatMap(d =>
+      Object.keys(d).filter(k => attributeRegex.test(k))
+    )
+  )
+);
+
+```
+
+
+
+```js
+const displayColumns = ["Project Name", "Application: Fiscal Year", ...matchingColumns];
+```
+
+
+
+```js
+const yesNoFormat = (value, options = {}) => {
+  const { treatYesAs } = options;
+  const div = document.createElement("div");
+  div.textContent = value;
+
+  const yes = value === "Yes";
+  const no = value === "No";
+  const unknown = value === "Do not know";
+
+  if (treatYesAs === "positive") {
+    if (yes) {
+      div.style.backgroundColor = "green";
+      div.style.color = "white";
+    } else if (unknown) {
+      div.style.backgroundColor = "#ffd994";
+      div.style.color = "black";
+    }
+  } else if (treatYesAs === "positive_fullColor") {
+    if (yes) {
+      div.style.backgroundColor = "green";
+      div.style.color = "white";
+    } else if (no) {
+      div.style.backgroundColor = "#b65436";
+      div.style.color = "white";
+    } else if (unknown) {
+      div.style.backgroundColor = "#ffd994";
+      div.style.color = "black";
+    }
+  } else if (treatYesAs === "positive_highlightColor") {
+    if (no) {
+      div.style.backgroundColor = "#b65436";
+      div.style.color = "white";
+    } else if (unknown) {
+      div.style.backgroundColor = "#ffd994";
+      div.style.color = "black";
+    }
+  } else if (treatYesAs === "negative") {
+    if (yes) {
+      div.style.backgroundColor = "#b65436";
+      div.style.color = "white";
+    } else if (unknown) {
+      div.style.backgroundColor = "#ffd994";
+      div.style.color = "black";
+    }
+  } else if (treatYesAs === "negative_fullColor") {
+    if (yes) {
+      div.style.backgroundColor = "#b65436";
+      div.style.color = "white";
+    } else if (no) {
+      div.style.backgroundColor = "green";
+      div.style.color = "white";
+    } else if (unknown) {
+      div.style.backgroundColor = "#ffd994";
+      div.style.color = "black";
+    }
+  } else if (treatYesAs === "negative_highlightColor") {
+    if (yes) {
+      div.style.backgroundColor = "#b65436";
+      div.style.color = "white";
+    } else if (unknown) {
+      div.style.backgroundColor = "#ffd994";
+      div.style.color = "black";
+    }
+  }
+
+  return div;
+};
+```
+
+
+
+```js
+const formatByColumn = {};
+for (const col of displayColumns) {
+  const match = col.match(/^(.+?)(?:, \d{4})?$/); // Extract base attribute without year
+  const baseAttr = match?.[1]?.trim();
+
+  if (baseAttr && attributeInterpretation[baseAttr]) {
+    const treatYesAs = attributeInterpretation[baseAttr];
+    formatByColumn[col] = value => yesNoFormat(value, { treatYesAs });
+  }
+}
+```
+
+
+<!--- NICELY FORMATTED TABLE BUT NEED TO INTEGRATE WITH OTHER VIEWS
+```js
+view(Inputs.table(filtered_projects_with_ES_outcomes, {
+  columns: displayColumns,
+  header: Object.fromEntries(displayColumns.map(col => [col, col])), // or set friendly names
+  format: formatByColumn
+}))
+
+```
+-->
+
+
+
+
+```js
+const interpret_008 = {
+  //"Project In Compliance": "positive",
+  //"Project Engaged With Communities": "positive",
+  //"Grievance Mechanism": "positive",
+  //"Consultation": "positive",
+  //"Community Engagement": "positive",
+
+  "Accidents Occurred": "negative",
+  "Changes To Workforce": "negative",
+  "Project Worker Layoffs": "negative",
+  "Strikes Or Labor Disputes": "negative",
+  "Disputes With Trade Union": "negative",
+  "Project Involve Land Acquisition": "negative",
+  "Community Strike Or Opposition": "negative",
+  "Gender-Based Violence": "negative",
+  "Project Cited Or Fined": "negative",
+  "Project Involved In Dispute Resolution": "negative"
+};
+```
+
+```js
+function flag008(projects) {
+  return projects.map(project => {
+    let flagged = false;
+
+    for (const key in project) {
+      const match = key.match(/^(.*),\s*\d{4}$/);
+      if (match) {
+        const baseKey = match[1];
+        const interpretation = interpret_008[baseKey];
+        const value = project[key];
+
+        if (interpretation === "negative" && value === "Yes") {
+          flagged = true;
+          break;
+        }
+        if (interpretation === "positive" && (value === "No" || value === "no" || value === false)) {
+          flagged = true;
+          break;
+        }
+      }
+    }
+
+    return { ...project, "008 flag": flagged };
+  });
+}
+```
+For convenience, we can isolate only those project with adverse E&S records:
+
+```js
+// Usage
+const projects_with_ES_outcomes_flagged = flag008(projects_with_ES_outcomes);
+//display(projects_with_ES_outcomes_flagged)
+```
+
+```js
+// Usage
+display(projects_with_ES_outcomes_flagged.filter(d => d["008 flag"] === true))
+```
+
+
+```js
+function filterBy008FlagAndYear(projects, year) {
+  return projects.filter(project => {
+    if (!project["008 flag"]) return false;
+
+    // Check if any attribute for this year is problematic
+    for (const key in project) {
+      if (key.endsWith(`, ${year}`)) {
+        // Extract base attribute name
+        const baseKey = key.slice(0, -(`, ${year}`).length);
+        const interpretation = interpret_008[baseKey];
+        const value = project[key];
+
+        if (!interpretation) continue; // skip if attribute not in interpret_008
+
+        // Check if this value signals a problem, matching how you set the flag
+        if (
+          (interpretation === "negative" && value === "Yes") ||
+          (interpretation === "positive" && (value === "No" || value === "no" || value === false))
+        ) {
+          return true; // found a problematic attribute for this year
+        }
+      }
+    }
+
+    return false; // no problematic attribute for this year
+  });
+}
+```
+
+
+```js
+const flagged_2022_projects = filterBy008FlagAndYear(projects_with_ES_outcomes_flagged, "2022");
+const flagged_2023_projects = filterBy008FlagAndYear(projects_with_ES_outcomes_flagged, "2023");
+```
+
+<!-- BETTER PRESENTATION WOULD MAKE THIS MORE USEFUL
+```js echo
+// Display
+display(flagged_2022_projects);
+// or
+display(flagged_2023_projects);
+```
+-->
+
+```js
+import {download} from "/components/download.js";
+```
+
+
+```js
+function serialize (data) {
+ let s = JSON.stringify(data);
+ return new Blob([s], {type: "application/json"}) 
+}
+```
+
+
+<!-- THESE NEED TO BE RE-WIRED
+
+```js
+display(download(serialize(flagged_2023_projects), "flagged_2023_projects", "Download Flagged 2024 Projects [JSON]"))
+```
+
+```js
+const downloadCSV = (data, filename = 'flagged_2023_projects.csv') => {
+  let downloadData = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  
+  const button = download(
+    downloadData,
+    filename,
+    `Download Flagged 2024 Projects [CSV]`
+  );
+  return button;
+};
+display(downloadCSV(flagged_2023_projects))
+```
+-->
+
+
+---
+
+<br/>
+
+
+**<mark>`Portfolio Monitored in Past 2 Years`</mark>**
+
+
+```js
+display(flattenVisitsByFY(active_projects, trips_with_visits))
+```
+
+```js
+// Minimal-call API:
+//   result = flattenVisitsByFY(projects, trips_with_visits)
+//
+// Adds year-suffixed columns for all present fields below, plus Visited / Years Visited.
+function flattenVisitsByFY(projects, trips, opts = {}) {
+  const defaults = {
+    projectKey: "Project Name",
+    fiscalYearKey: "Visit Fiscal Year",
+    fieldsToFlatten: [
+      "Trip: Name",
+      "Project Visit: Visit Number",
+      "Trip: ID",
+      "Start Date",
+      "Trip Countries",
+      // Newly requested fields:
+      "Visit Reason",
+      "Project Visit: Record Type",
+      "Project Name: Project Owner: Division",
+      "Comments",
+      "ENV Summary",
+      "SOC Summary",
+    ],
+  };
+  const cfg = { ...defaults, ...opts };
+
+  // --- helpers ---
+  const nbsp = /\u00a0/g;
+  const collapseSpaces = s => String(s ?? "").replace(nbsp, " ").replace(/\s+/g, " ").trim();
+  const normCol = s => collapseSpaces(s).replace(/\s*:\s*/g, ": "); // tidy spaces around ":"
+  const get = (obj, key) => obj?.[key] ?? obj?.[normCol(key)] ?? "";
+  const parseFY = v => (String(v ?? "").match(/(\d{4})/) || [,""])[1];
+  const parseDateTS = v => { const t = Date.parse(String(v ?? "")); return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY; };
+  const dedupJoin = arr => {
+    const out = [], seen = new Set();
+    for (const v of arr.map(x => String(x ?? "").trim()).filter(Boolean)) {
+      if (!seen.has(v)) { seen.add(v); out.push(v); }
+    }
+    return out.join(" | ");
+  };
+  const normObjKeys = o => Object.fromEntries(Object.entries(o).map(([k,v]) => [normCol(k), v]));
+
+  // Normalize rows (non-destructive copies)
+  const projRows = projects.map(normObjKeys);
+  const tripRows = trips.map(normObjKeys);
+
+  // --- auto-detect keys ---
+  const projKey = normCol(cfg.projectKey);
+
+  // Try common variants for trips project-name column
+  const tripKeys = Object.keys(tripRows[0] || {});
+  let tripProjectKey =
+    tripKeys.find(k => k === " Project Name:  Project Name") ||
+    tripKeys.find(k => k.toLowerCase().endsWith("project name")) ||
+    tripKeys.find(k => k.toLowerCase() === "project name: project name") ||
+    tripKeys.find(k => k.toLowerCase() === "project name");
+  if (!tripProjectKey) throw new Error("Could not auto-detect trips project-name column.");
+
+  // Fiscal year column
+  let fyKey = tripKeys.find(k => k === cfg.fiscalYearKey) ||
+              tripKeys.find(k => k.toLowerCase().replace(/\s+/g,"") === cfg.fiscalYearKey.toLowerCase().replace(/\s+/g,""));
+  if (!fyKey) throw new Error("Could not find a 'Visit Fiscal Year' column in trips.");
+
+  // Only keep fields that actually exist (so missing ones don't break)
+  const fieldsToFlatten = cfg.fieldsToFlatten.filter(f =>
+    Object.prototype.hasOwnProperty.call(tripRows[0] || {}, f) ||
+    Object.prototype.hasOwnProperty.call(tripRows[0] || {}, normCol(f))
+  );
+
+  // Prepare trips
+  const preppedTrips = tripRows
+    .map(row => {
+      const projName = collapseSpaces(get(row, tripProjectKey));
+      const fy = parseFY(get(row, fyKey));
+      const sortKey = parseDateTS(get(row, "Start Date"));
+      const picked = {};
+      for (const f of fieldsToFlatten) picked[f] = get(row, f);
+      return { projName, fy, sortKey, ...picked };
+    })
+    .filter(r => r.projName && r.fy);
+
+  // Stable order (earliest Start Date first)
+  preppedTrips.sort((a, b) =>
+    a.projName.localeCompare(b.projName) ||
+    a.fy.localeCompare(b.fy) ||
+    (a.sortKey - b.sortKey)
+  );
+
+  // Aggregate by project + FY
+  const byProjFY = new Map();
+  for (const row of preppedTrips) {
+    const key = `${row.projName}||${row.fy}`;
+    let agg = byProjFY.get(key);
+    if (!agg) {
+      agg = { projName: row.projName, fy: row.fy };
+      for (const f of fieldsToFlatten) agg[f] = [];
+      byProjFY.set(key, agg);
+    }
+    for (const f of fieldsToFlatten) agg[f].push(row[f]);
+  }
+
+  // Build wide columns (Field_YYYY)
+  const perProjectWide = new Map();
+  for (const { projName, fy, ...rest } of byProjFY.values()) {
+    let bag = perProjectWide.get(projName);
+    if (!bag) { bag = {}; perProjectWide.set(projName, bag); }
+    for (const f of fieldsToFlatten) {
+      bag[`${f}_${fy}`] = dedupJoin(rest[f] || []);
+    }
+  }
+
+  // Years visited per project
+  const yearsByProject = new Map();
+  for (const { projName, fy } of byProjFY.values()) {
+    if (!yearsByProject.has(projName)) yearsByProject.set(projName, new Set());
+    yearsByProject.get(projName).add(fy);
+  }
+
+  // Merge into projects
+  const result = projRows.map(p => {
+    const projName = collapseSpaces(get(p, projKey));
+    const wide = perProjectWide.get(projName) || {};
+    const years = Array.from(yearsByProject.get(projName) ?? []).sort();
+    return {
+      ...p,
+      Visited: years.length ? "Yes" : "No",
+      "Years Visited": years.join(", "),
+      ...wide,
+    };
+  });
+
+  return result;
+}
+
+```
 
 
 <br/>
 
 ---
 
-## Step 5: Final Risk Score
+## Step 6: Final Risk Score
 
 <br/>
 
@@ -1732,7 +2954,7 @@ ${tex`\text{ESRS}_{\text{factored} {(i)}} = \min\left(\max\left(ESRS_{\text{coun
 
 
 ---
-**<mark>Step 5 Output</mark>** 
+**<mark>Step 6 Output</mark>** 
   
 
 
@@ -1866,8 +3088,6 @@ function segmentPortfolio(data) {
 
 
 
----
-
 ```js
 const scoredProjects = active_projects
 ```
@@ -1897,489 +3117,3 @@ Math.ceil(total
 
 ---
 
-
-
-
-```js
-let outcomes_survey_year_selection_input = Inputs.select(
-  ["2022","2023"],
-  //fiscal_years,
-  {
-  label: "Select a Year",
-  value: "2023"
-  }
-)
-
-let outcomes_survey_year_selection = Inputs.bind(Inputs.select(
-  ["2022","2023"],
-  //fiscal_years,
-  {
-  label: "Select a Year",
-  value: "2023"
-  }
-), outcomes_survey_year_selection_input)
-```
-
-```js
-const outcomes_survey_year_select = Generators.input(outcomes_survey_year_selection);
-```
-
----
-
-<br/>
-
-```js
-Inputs.bind(Inputs.select(
-  ["2022","2023"],
-  //fiscal_years,
-  {
-  width: "40px",
-  value: "2023",
-  }
-), outcomes_survey_year_selection)
-```
-
-
-```js
-const outcomes_survey_by_year = outcomes_survey.filter(d => d["Application: Fiscal Year"] == outcomes_survey_year_select);
-```
-
-```js
-display(outcomes_survey_by_year)
-```
-
-
-```js
-view(Inputs.table(outcomes_survey_by_year, {
-  columns: [
-    "Project Name",
-    
-    "Form 007/008: Form 007/008 Name",
-    "Application: Application Number",
-    "Project In Compliance",
-    "Project Worker Layoffs",
-    "Accidents Occurred",
-    "Changes To Workforce",
-    "Community Strike Or Opposition",
-    "Disputes With Trade Union",
-    "Gender-Based Violence",
-    "# Households Economically Displaced",
-    "# Households Physically Displaced",
-    "Project Cited Or Fined",
-    "Project Design Change",
-    "Project Involved In Dispute Resolution",
-    "Project Engaged With Communities",
-    "Project Involve Land Acquisition",
-    "Strikes Or Labor Disputes",
-    "# Of Workers Laid Off",
-    "# Workers Laid Off"
-  ],
-  header: {
-    "Project Name": "Project Name",
-    "Application: Application Number": "Application Number",
-    "Form 007/008: Form 007/008 Name": "Form 008 Name",
-    "Project In Compliance": "Project In Compliance",
-    "Project Worker Layoffs": "Project Worker Layoffs",
-    "Accidents Occurred": "Accidents Occurred",
-    "Changes To Workforce": "Changes To Workforce",
-    "Community Strike Or Opposition": "Community Strike Or Opposition",
-    "Disputes With Trade Union": "Disputes With Trade Union",
-    "Gender-Based Violence": "Gender-Based Violence",
-    "# Households Economically Displaced": "# Households Economically Displaced",
-    "# Households Physically Displaced": "# Households Physically Displaced",
-    "Project Cited Or Fined": "Project Cited Or Fined",
-    "Project Design Change": "Project Design Change",
-    "Project Involved In Dispute Resolution": "Project Involved In Dispute Resolution",
-    "Project Engaged With Communities": "Project Engaged With Communities",
-    "Project Involve Land Acquisition": "Project Involve Land Acquisition",
-    "Strikes Or Labor Disputes": "Strikes Or Labor Disputes",
-    "# Of Workers Laid Off": "# Of Workers Laid Off",
-    "# Workers Laid Off": "# Workers Laid Off"
-  }
-}))
-
-```
-
-
-```js echo
-function mergeProjectAndOutcomes(all_projects, outcomes_survey) {
-  const attributesToTransfer = [
-    "Form 007/008: Form 007/008 Name",
-    "Application: Application Number",
-    "Project In Compliance",
-    "Project Worker Layoffs",
-    "Accidents Occurred",
-    "Changes To Workforce",
-    "Community Strike Or Opposition",
-    "Disputes With Trade Union",
-    "Gender-Based Violence",
-    "# Households Economically Displaced",
-    "# Households Physically Displaced",
-    "Project Cited Or Fined",
-    "Project Design Change",
-    "Project Involved In Dispute Resolution",
-    "Project Engaged With Communities",
-    "Project Involve Land Acquisition",
-    "Strikes Or Labor Disputes",
-    "# Of Workers Laid Off",
-    "# Workers Laid Off"
-  ];
-
-  // Group insight report entries by project name
-  const grouped = {};
-  for (const row of outcomes_survey) {
-    const name = row["Project Name"];
-    const year = row["Application: Fiscal Year"];
-    if (!name || !year) continue;
-    if (!grouped[name]) grouped[name] = {};
-    grouped[name][year] = row;
-  }
-
-  // Now merge the grouped data into all_projects
-  return all_projects.map(project => {
-    const name = project["Project Name"];
-    const matchedByYear = grouped[name] || {};
-
-    const enriched = { ...project };
-
-    for (const [year, report] of Object.entries(matchedByYear)) {
-      for (const attr of attributesToTransfer) {
-        const key = `${attr}, ${year}`;
-        enriched[key] = report[attr] ?? null;
-      }
-    }
-
-    return enriched;
-  });
-}
-```
-
-```js echo
-const projects_with_ES_outcomes = mergeProjectAndOutcomes(active_projects, outcomes_survey);
-```
-
-```js echo
-display(projects_with_ES_outcomes);
-```
-
-
-----
-
-
-```js
-const outcomes_ES_attributes = [
-  "Project In Compliance",
-  "Changes To Workforce",
-  "Project Worker Layoffs",
-  "Accidents Occurred",
-  "Strikes Or Labor Disputes",
-  "Disputes With Trade Union",
-  "Project Involve Land Acquisition",
-  "Community Strike Or Opposition",
-  "Project Engaged With Communities",
-  "Gender-Based Violence",
-  "Project Cited Or Fined",
-  "Project Involved In Dispute Resolution"
-];
-```
-
-```js
-const attributeInterpretation = {
-  "Project In Compliance": "positive_highlightColor",
-  "Project Engaged With Communities": "positive",
-  "Grievance Mechanism": "positive",
-  "Consultation": "positive",
-  "Community Engagement": "positive",
-
-  "Accidents Occurred": "negative",
-  "Changes To Workforce": "negative",
-  "Project Worker Layoffs": "negative",
-  "Strikes Or Labor Disputes": "negative",
-  "Disputes With Trade Union": "negative",
-  "Project Involve Land Acquisition": "negative",
-  "Community Strike Or Opposition": "negative",
-  "Gender-Based Violence": "negative",
-  "Project Cited Or Fined": "negative",
-  "Project Involved In Dispute Resolution": "negative"
-};
-
-```
-
-
-```js
-const attributeRegex = new RegExp(`^(${outcomes_ES_attributes.join("|")})(, \\d{4})?$`);
-```
-
-
-
-```js
-const filtered_projects_with_ES_outcomes = projects_with_ES_outcomes.filter(d =>
-  Object.keys(d).some(k => attributeRegex.test(k) && d[k] != null && d[k] !== "")
-);
-```
-
-```js echo
-filtered_projects_with_ES_outcomes
-```
-
-
-
-```js
-const matchingColumns = Array.from(
-  new Set(
-    filtered_projects_with_ES_outcomes.flatMap(d =>
-      Object.keys(d).filter(k => attributeRegex.test(k))
-    )
-  )
-);
-
-```
-
-
-
-```js
-const displayColumns = ["Project Name", "Application: Fiscal Year", ...matchingColumns];
-```
-
-
-
-```js
-const yesNoFormat = (value, options = {}) => {
-  const { treatYesAs } = options;
-  const div = document.createElement("div");
-  div.textContent = value;
-
-  const yes = value === "Yes";
-  const no = value === "No";
-  const unknown = value === "Do not know";
-
-  if (treatYesAs === "positive") {
-    if (yes) {
-      div.style.backgroundColor = "green";
-      div.style.color = "white";
-    } else if (unknown) {
-      div.style.backgroundColor = "#ffd994";
-      div.style.color = "black";
-    }
-  } else if (treatYesAs === "positive_fullColor") {
-    if (yes) {
-      div.style.backgroundColor = "green";
-      div.style.color = "white";
-    } else if (no) {
-      div.style.backgroundColor = "#b65436";
-      div.style.color = "white";
-    } else if (unknown) {
-      div.style.backgroundColor = "#ffd994";
-      div.style.color = "black";
-    }
-  } else if (treatYesAs === "positive_highlightColor") {
-    if (no) {
-      div.style.backgroundColor = "#b65436";
-      div.style.color = "white";
-    } else if (unknown) {
-      div.style.backgroundColor = "#ffd994";
-      div.style.color = "black";
-    }
-  } else if (treatYesAs === "negative") {
-    if (yes) {
-      div.style.backgroundColor = "#b65436";
-      div.style.color = "white";
-    } else if (unknown) {
-      div.style.backgroundColor = "#ffd994";
-      div.style.color = "black";
-    }
-  } else if (treatYesAs === "negative_fullColor") {
-    if (yes) {
-      div.style.backgroundColor = "#b65436";
-      div.style.color = "white";
-    } else if (no) {
-      div.style.backgroundColor = "green";
-      div.style.color = "white";
-    } else if (unknown) {
-      div.style.backgroundColor = "#ffd994";
-      div.style.color = "black";
-    }
-  } else if (treatYesAs === "negative_highlightColor") {
-    if (yes) {
-      div.style.backgroundColor = "#b65436";
-      div.style.color = "white";
-    } else if (unknown) {
-      div.style.backgroundColor = "#ffd994";
-      div.style.color = "black";
-    }
-  }
-
-  return div;
-};
-```
-
-
-
-```js
-const formatByColumn = {};
-for (const col of displayColumns) {
-  const match = col.match(/^(.+?)(?:, \d{4})?$/); // Extract base attribute without year
-  const baseAttr = match?.[1]?.trim();
-
-  if (baseAttr && attributeInterpretation[baseAttr]) {
-    const treatYesAs = attributeInterpretation[baseAttr];
-    formatByColumn[col] = value => yesNoFormat(value, { treatYesAs });
-  }
-}
-```
-
-
-
-```js echo
-view(Inputs.table(filtered_projects_with_ES_outcomes, {
-  columns: displayColumns,
-  header: Object.fromEntries(displayColumns.map(col => [col, col])), // or set friendly names
-  format: formatByColumn
-}))
-
-```
-
-
-
----
-
-
-```js
-const interpret_008 = {
-  //"Project In Compliance": "positive",
-  //"Project Engaged With Communities": "positive",
-  //"Grievance Mechanism": "positive",
-  //"Consultation": "positive",
-  //"Community Engagement": "positive",
-
-  "Accidents Occurred": "negative",
-  "Changes To Workforce": "negative",
-  "Project Worker Layoffs": "negative",
-  "Strikes Or Labor Disputes": "negative",
-  "Disputes With Trade Union": "negative",
-  "Project Involve Land Acquisition": "negative",
-  "Community Strike Or Opposition": "negative",
-  "Gender-Based Violence": "negative",
-  "Project Cited Or Fined": "negative",
-  "Project Involved In Dispute Resolution": "negative"
-};
-```
-
-```js
-function flag008(projects) {
-  return projects.map(project => {
-    let flagged = false;
-
-    for (const key in project) {
-      const match = key.match(/^(.*),\s*\d{4}$/);
-      if (match) {
-        const baseKey = match[1];
-        const interpretation = interpret_008[baseKey];
-        const value = project[key];
-
-        if (interpretation === "negative" && value === "Yes") {
-          flagged = true;
-          break;
-        }
-        if (interpretation === "positive" && (value === "No" || value === "no" || value === false)) {
-          flagged = true;
-          break;
-        }
-      }
-    }
-
-    return { ...project, "008 flag": flagged };
-  });
-}
-```
-
-```js echo
-// Usage
-const projects_with_ES_outcomes_flagged = flag008(projects_with_ES_outcomes);
-display(projects_with_ES_outcomes_flagged)
-```
-
-```js echo
-// Usage
-display(projects_with_ES_outcomes_flagged.filter(d => d["008 flag"] === true))
-```
-
-
-```js echo
-function filterBy008FlagAndYear(projects, year) {
-  return projects.filter(project => {
-    if (!project["008 flag"]) return false;
-
-    // Check if any attribute for this year is problematic
-    for (const key in project) {
-      if (key.endsWith(`, ${year}`)) {
-        // Extract base attribute name
-        const baseKey = key.slice(0, -(`, ${year}`).length);
-        const interpretation = interpret_008[baseKey];
-        const value = project[key];
-
-        if (!interpretation) continue; // skip if attribute not in interpret_008
-
-        // Check if this value signals a problem, matching how you set the flag
-        if (
-          (interpretation === "negative" && value === "Yes") ||
-          (interpretation === "positive" && (value === "No" || value === "no" || value === false))
-        ) {
-          return true; // found a problematic attribute for this year
-        }
-      }
-    }
-
-    return false; // no problematic attribute for this year
-  });
-}
-```
-
-
-```js
-const flagged_2022_projects = filterBy008FlagAndYear(projects_with_ES_outcomes_flagged, "2022");
-const flagged_2023_projects = filterBy008FlagAndYear(projects_with_ES_outcomes_flagged, "2023");
-```
-
-```js echo
-// Display
-display(flagged_2022_projects);
-// or
-display(flagged_2023_projects);
-```
-
----
-
-
-
-```js
-import {download} from "/components/download.js";
-```
-
-
-```js
-function serialize (data) {
- let s = JSON.stringify(data);
- return new Blob([s], {type: "application/json"}) 
-}
-```
-
-
-
-```js
-display(download(serialize(flagged_2023_projects), "flagged_2023_projects", "Download Flagged 2024 Projects [JSON]"))
-```
-
-```js
-const downloadCSV = (data, filename = 'flagged_2023_projects.csv') => {
-  let downloadData = new Blob([d3.csvFormat(data)], { type: "text/csv" });
-  
-  const button = download(
-    downloadData,
-    filename,
-    `Download Flagged 2024 Projects [CSV]`
-  );
-  return button;
-};
-display(downloadCSV(flagged_2023_projects))
-```
