@@ -56,6 +56,32 @@ Plot.plot({
 ```
 
 
+## Incidents by Type
+
+
+```js
+const incident_type_count = (() => {
+  const rows = Array.from(
+    d3.group(incident_data, d => d["Type of Incident"]),
+    ([project, items]) => ({
+      "Type of Incident": (project == null || project === "") ? "[no incident type value]" : project,
+      "Number of Incidents": items.length
+    })
+  ).sort((a, b) => b["Number of Incidents"] - a["Number of Incidents"]);
+
+  const total = d3.sum(rows, d => d["Number of Incidents"]);
+  rows.push({
+    "project": "Total Number of Incidents",
+    "Number of Incidents": total
+  });
+
+  return rows;
+})();
+
+display(Inputs.table(incident_type_count));
+```
+
+
 ## Incidents by Country
 
 ```js
@@ -106,7 +132,6 @@ display(Inputs.table(sector_incident_count));
 ```
 
 
-
 ## Incidents per Project
 
 
@@ -132,10 +157,6 @@ const project_incident_count = (() => {
 display(Inputs.table(project_incident_count));
 ```
 
----
-
-
----
 
 
 
@@ -157,6 +178,100 @@ function quarterFromDate(d) {
   return `FY${String(fy).slice(-2)} Q${q}`;
 }
 ```
+
+---
+
+## Incidents by Quarter*
+
+_* **Note:** DFC Fiscal Year starts in October_
+
+```js
+
+// Filter incidents by fiscal year & quarter (FY starts Oct 1).
+// Usage: filterIncidentsByFYQ(incident_data, 2025, 1)  // FY25 Q1
+//        filterIncidentsByFYQ(incident_data, "FY25 Q3") // label form
+const filterIncidentsByFYQ = (rows, fyOrLabel, qArg) => {
+  let fy, q;
+
+  if (typeof fyOrLabel === "string") {
+    const m = /FY(\d{2})\s*Q([1-4])/i.exec(fyOrLabel);
+    if (!m) return [];
+    fy = 2000 + +m[1];         // "25" -> 2025
+    q  = +m[2];
+  } else {
+    fy = fyOrLabel >= 100 ? fyOrLabel : 2000 + fyOrLabel; // 25 -> 2025
+    q  = +qArg;
+  }
+
+  // Quarter start (inclusive) and next quarter start (exclusive)
+  const start = new Date(
+    q === 1 ? fy - 1 : fy,              // FY Q1 begins Oct 1 of previous calendar year
+    q === 1 ? 9 : q === 2 ? 0 : q === 3 ? 3 : 6, // Oct, Jan, Apr, Jul
+    1
+  );
+  const next = new Date(
+    q === 1 ? fy : fy,                  // next quarter boundary
+    q === 1 ? 0 : q === 2 ? 3 : q === 3 ? 6 : 9, // Jan, Apr, Jul, Oct
+    1
+  );
+
+  return rows.filter(d => {
+    const inc = parseDate(d["Incident Date"]);  // your helper
+    return inc && inc >= start && inc < next;
+  });
+};
+
+```
+
+```js
+const fy_quarter_select = view(Inputs.select(["FY24 Q1","FY24 Q1","FY24 Q2","FY24 Q4","FY25 Q1"], {value: "FY25 Q1"}))
+```
+
+```js
+const selected_fy_quarter_incidents = filterIncidentsByFYQ(incident_data, fy_quarter_select)
+```
+
+
+```js
+display(Inputs.table(filterIncidentsByFYQ(incident_data, fy_quarter_select)))
+```
+
+**Incidents by Type for ${fy_quarter_select}**
+
+```js
+display(
+  // incidents by Type of Incident (sorted bar)
+  // total for portfolio; need to segment by year
+Plot.plot({
+  //title: "Incidents by Type",
+  height: 440,
+  width: 900,
+  marginLeft: 200,                 // small room for end labels
+  marginRight: 28,                 // small room for end labels
+  x: {label: "Incidents"},
+  y: {
+    tickSize: 2,
+  },
+  marks: [
+    Plot.ruleX([0]),
+    Plot.barX(
+      selected_fy_quarter_incidents,
+      Plot.groupY({x: "count"}, {y: "Type of Incident", inset: 2})
+    ),
+    // label at the bar end (dynamic, no magic numbers)
+    Plot.text(
+      selected_fy_quarter_incidents,
+      Plot.groupY(
+        {x: "count", text: "count"},
+        {y: "Type of Incident", dx: 8, textAnchor: "start"}
+      )
+    )
+  ]
+}))
+
+```
+
+---
 
 ## Project Deep-Dive
 
