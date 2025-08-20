@@ -362,3 +362,121 @@ Plot.plot({
 
 )
 ```
+
+```js
+const incidentCountries = Array.from(
+  new Set(incident_data.map(d => (d.Country ?? "").trim()).filter(Boolean))
+).sort((a, b) => a.localeCompare(b));
+```
+
+
+```js
+//Count incidents by country (trim + drop blanks).
+const incidentsByCountry = d3.rollup(
+  incident_data.filter(d => (d.Country ?? "").trim() !== ""),
+  v => v.length,
+  d => (d.Country ?? "").trim()
+);
+```
+
+
+
+```js
+display(
+  Plot.plot({
+    projection: {
+      type: projection,
+      rotate,
+      inset,
+      domain: countries.features.find(d => d.properties.name === focus_view)
+    },
+    height: 400,
+    marks: [
+      // Base outlines for all countries
+      Plot.geo(countries, {
+        stroke: "white",
+        strokeWidth: 0.5,
+        fill: "transparent"
+      }),
+      // Data layer: only countries with incidents > 0
+      Plot.geo(countries, {
+        stroke: "white",
+        strokeWidth: 0.5,
+        fill: d => {
+          const n = incidentsByCountry.get(d.properties.name);
+          return n > 0 ? n : undefined;
+        },
+        fillOpacity: 0.85
+      }),
+      // Tooltip dots
+      Plot.dot(
+        countries.features,
+        Plot.centroid({
+          r: 2,
+          fill: "black",
+          fillOpacity: 0.0001,
+          channels: {
+            "Country: ": d => d.properties.name,
+            "Incidents: ": d => incidentsByCountry.get(d.properties.name) ?? 0
+          },
+          tip: true
+        })
+      ),
+      Plot.sphere({ stroke: "white", strokeOpacity: 0.5 }),
+      //Plot.graticule({ stroke: "white", strokeOpacity: 0.1 })
+    ],
+    color: {
+      scheme: "BrBG",
+      type: "linear",
+      legend: true,
+      label: "Incidents"
+    }
+  })
+)
+
+
+```
+
+```js
+const focus_view = view(Inputs.select(["Select", ...incidentCountries], { label: "Focus Country", value: "Select" }));
+```
+
+```js
+const projection = view(Inputs.select(["equal-earth",
+"equirectangular",
+"orthographic",
+"stereographic",
+"mercator",
+"transverse-mercator",
+"azimuthal-equal-area",
+"azimuthal-equidistant",
+"conic-conformal",
+"conic-equal-area",
+"conic-equidistant",
+"gnomonic",], {value: "stereographic", label: "Change Projection"}))
+```
+
+```js
+const inset = view(Inputs.range([0, -1800], {
+  value: 0,
+  step: 100,
+  label: "Zoom"
+}))
+```
+
+
+```js
+const rotate = view(Inputs.form([
+  Inputs.range([-360, 360], {value: 0, step: 1, label: "Rotate λ (yaw)"}),
+  Inputs.range([-180, 180], {value: 0, step: 1, label: "Rotate φ (pitch)"}),
+  Inputs.range([-360, 360], {value: 0, step: 1, label: "Rotate γ (roll)"})
+]))
+```
+
+```js
+const countries = topojson.feature(world, world.objects.countries)
+```
+
+```js
+const world = FileAttachment("/data/external/countries-50m.json").json()
+```
