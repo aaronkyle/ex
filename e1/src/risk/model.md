@@ -1,32 +1,33 @@
-# ESG Risk Ranking Model for Project Portfolio Monitoring
+# ESG Risk Ranking Model for Portfolio Monitoring
 
 This document defines a model for transparently and generatively calculating project E&S risk scores and for risk-based portfolio segmentation. The model factors project E&S risk categories, contextual risk using multi-dimensional ESG scores, and institutionally-defined risk parameters reflective of project-specific red flags and/or risk mitigants. 
+
 
 
 
 ---
 
 ```js
-const local_file_insight_all_projects = view(Inputs.file({accept: ".csv"}));
+const local_file_insight_active_projects = view(Inputs.file({label: "Project Portfolio (Active)", accept: ".csv"}));
 ```
 
 
 ```js
 // IndexedDB Setup
-const dbName_insight_all_projects  = "insight_all_projects";
-const dbVersion_insight_all_projects  = 1;
-const storeName_insight_all_projects  = "insight_all";
+const dbName_insight_active_projects  = "insight_active_projects";
+const dbVersion_insight_active_projects  = 1;
+const storeName_insight_active_projects  = "insight_all";
 ```
 
 ```js
 // Function to open or create IndexedDB
-async function openDB_insight_all_projects () {
+async function openDB_insight_active_projects () {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(dbName_insight_all_projects , dbVersion_insight_all_projects );
+        const request = indexedDB.open(dbName_insight_active_projects , dbVersion_insight_active_projects );
         
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
-            db.createObjectStore(storeName_insight_all_projects , { keyPath: "id" });
+            db.createObjectStore(storeName_insight_active_projects , { keyPath: "id" });
         };
         
         request.onsuccess = () => resolve(request.result);
@@ -37,14 +38,14 @@ async function openDB_insight_all_projects () {
 
 ```js
 // Function to get data from IndexedDB
-async function getData_insight_all_projects () {
-    const db = await openDB_insight_all_projects();
+async function getData_insight_active_projects () {
+    const db = await openDB_insight_active_projects();
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction(storeName_insight_all_projects , "readonly");
-        const store = transaction.objectStore(storeName_insight_all_projects );
-        const request = store.get("state_data_insight_all_projects");
+        const transaction = db.transaction(storeName_insight_active_projects , "readonly");
+        const store = transaction.objectStore(storeName_insight_active_projects );
+        const request = store.get("state_data_insight_active_projects");
         
-        request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_all_projects);
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_active_projects);
         request.onerror = () => reject(request.error);
     });
 }
@@ -52,12 +53,12 @@ async function getData_insight_all_projects () {
 
 ```js
 // Function to save data to IndexedDB
-async function saveData_insight_all_projects(data) {
-    const db = await openDB_insight_all_projects();
+async function saveData_insight_active_projects(data) {
+    const db = await openDB_insight_active_projects();
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction(storeName_insight_all_projects, "readwrite");
-        const store = transaction.objectStore(storeName_insight_all_projects);
-        store.put({ id: "state_data_insight_all_projects", data });
+        const transaction = db.transaction(storeName_insight_active_projects, "readwrite");
+        const store = transaction.objectStore(storeName_insight_active_projects);
+        store.put({ id: "state_data_insight_active_projects", data });
         
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
@@ -68,36 +69,36 @@ async function saveData_insight_all_projects(data) {
 
 ```js
 // needed to correctly initialize the chart
-const template_data_insight_all_projects = FileAttachment("/data/internal/all_projects_template_minimal.csv").csv()
+const template_data_insight_active_projects = FileAttachment("/data/internal/all_projects_template_minimal.csv").csv()
 ```
 
 ```js
 /// Initialize state_data with IndexedDB or template data
-let state_data_insight_all_projects = Mutable(await getData_insight_all_projects ());
+let state_data_insight_active_projects = Mutable(await getData_insight_active_projects ());
 
-function swap_data_insight_all_projects(data) {
-  state_data_insight_all_projects.value = data;
+function swap_data_insight_active_projects(data) {
+  state_data_insight_active_projects.value = data;
 }
 
 (async function(d) {
-    return d === null ? "pending file selection" : state_data_insight_all_projects.value = await d.json();
-})(local_file_insight_all_projects);
+    return d === null ? "pending file selection" : state_data_insight_active_projects.value = await d.json();
+})(local_file_insight_active_projects);
 ```
 
 
 ```js
 // removing view here temporarily
-const load_template_data_insight_all_projects = Inputs.button("Reset Template", {reduce: () => swap_data_insight_all_projects(template_data_insight_all_projects)})
+const load_template_data_insight_active_projects = Inputs.button("Reset Template", {reduce: () => swap_data_insight_active_projects(template_data_insight_active_projects)})
 ```
 
 
 ```js
- const report_insight_all_projects  = (async () => {////
+ const report_insight_active_projects  = (async () => {////
   try {
-    return await local_file_insight_all_projects.csv();
+    return await local_file_insight_active_projects.csv();
   } catch (error) {
     console.warn("error with file", error);
-    return state_data_insight_all_projects;
+    return state_data_insight_active_projects;
   }
 })();
 
@@ -107,13 +108,21 @@ const load_template_data_insight_all_projects = Inputs.button("Reset Template", 
 
 ```js
 // Optional auto-persist
- await saveData_insight_all_projects(report_insight_all_projects);
+ await saveData_insight_active_projects(report_insight_active_projects);
 ```
 
 
 
 ```js
-const local_file_insight_outcomes_survey = view(Inputs.file({accept: ".csv"}));
+const active_projects = report_insight_active_projects;
+display(active_projects )
+```
+
+
+
+
+```js
+const local_file_insight_outcomes_survey = view(Inputs.file({label: "Outcomes Survey", accept: ".csv"}));
 ```
 
 
@@ -217,8 +226,17 @@ const load_template_data_insight_outcomes_survey = Inputs.button("Reset Template
 ```
 
 
+
 ```js
-const local_file_insight_trips_w_visits = view(Inputs.file({accept: ".csv"}));
+display(report_insight_outcomes_survey)
+```
+
+
+
+
+
+```js
+const local_file_insight_trips_w_visits = view(Inputs.file({label: "Project Visits", accept: ".csv"}));
 ```
 
 
@@ -323,21 +341,387 @@ const load_template_data_insight_trips_w_visits = Inputs.button("Reset Template"
 
 
 
+```js
+display(report_insight_trips_w_visits)
+```
 
 
 
 ```js
-const active_projects = report_insight_all_projects;
-display(active_projects )
+const local_file_insight_trips_w_monitoring_records = view(Inputs.file({label: "Monitoring Activities", accept: ".csv"}));
+```
+
+
+```js
+// IndexedDB Setup
+const dbName_insight_trips_w_monitoring_records  = "insight_trips_w_monitoring_records";
+const dbVersion_insight_trips_w_monitoring_records  = 1;
+const storeName_insight_trips_w_monitoring_records  = "insight_all";
 ```
 
 ```js
+// Function to open or create IndexedDB
+async function openDB_insight_trips_w_monitoring_records () {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName_insight_trips_w_monitoring_records , dbVersion_insight_trips_w_monitoring_records );
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(storeName_insight_trips_w_monitoring_records , { keyPath: "id" });
+        };
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to get data from IndexedDB
+async function getData_insight_trips_w_monitoring_records () {
+    const db = await openDB_insight_trips_w_monitoring_records();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_trips_w_monitoring_records , "readonly");
+        const store = transaction.objectStore(storeName_insight_trips_w_monitoring_records );
+        const request = store.get("state_data_insight_trips_w_monitoring_records");
+        
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_trips_w_monitoring_records);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to save data to IndexedDB
+async function saveData_insight_trips_w_monitoring_records(data) {
+    const db = await openDB_insight_trips_w_monitoring_records();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_insight_trips_w_monitoring_records, "readwrite");
+        const store = transaction.objectStore(storeName_insight_trips_w_monitoring_records);
+        store.put({ id: "state_data_insight_trips_w_monitoring_records", data });
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+```
+
+
+```js
+// needed to correctly initialize the chart
+const template_data_insight_trips_w_monitoring_records = FileAttachment("/data/internal/trips_w_monitoring_records_template_minimal.csv").csv()
+```
+
+```js
+/// Initialize state_data with IndexedDB or template data
+let state_data_insight_trips_w_monitoring_records = Mutable(await getData_insight_trips_w_monitoring_records ());
+
+function swap_data_insight_trips_w_monitoring_records(data) {
+  state_data_insight_trips_w_monitoring_records.value = data;
+}
+
+(async function(d) {
+    return d === null ? "pending file selection" : state_data_insight_trips_w_monitoring_records.value = await d.json();
+})(local_file_insight_trips_w_monitoring_records);
+```
+
+
+```js
+// removing view here temporarily
+const load_template_data_insight_trips_w_monitoring_records = Inputs.button("Reset Template", {reduce: () => swap_data_insight_trips_w_monitoring_records(template_data_insight_trips_w_monitoring_records)})
+```
+
+
+```js
+ const report_insight_trips_w_monitoring_records  = (async () => {////
+  try {
+    return await local_file_insight_trips_w_monitoring_records.csv();
+  } catch (error) {
+    console.warn("error with file", error);
+    return state_data_insight_trips_w_monitoring_records;
+  }
+})();
+
+```
+
+
+
+```js
+// Optional auto-persist
+ await saveData_insight_trips_w_monitoring_records(report_insight_trips_w_monitoring_records);
+```
+
+
+
+```js
+display(report_insight_trips_w_monitoring_records)
+```
+
+
+
+
+
+```js
+
+const local_file_env_soc_events = view(Inputs.file({label: "E&S Incidents", accept: ".xlsx"}));
+//display(local_file_env_soc_events_workbook);
+```
+
+```js
+// IndexedDB Setup
+const dbName_env_soc_events  = "env_soc_events";
+const dbVersion_env_soc_events  = 1;
+const storeName_env_soc_events  = "insight_all";
+```
+
+```js
+// Function to open or create IndexedDB
+async function openDB_env_soc_events () {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName_env_soc_events , dbVersion_env_soc_events );
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(storeName_env_soc_events , { keyPath: "id" });
+        };
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to get data from IndexedDB
+async function getData_env_soc_events () {
+    const db = await openDB_env_soc_events();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_env_soc_events , "readonly");
+        const store = transaction.objectStore(storeName_env_soc_events );
+        const request = store.get("state_data_env_soc_events");
+        
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_env_soc_events);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to save data to IndexedDB
+async function saveData_env_soc_events(data) {
+    const db = await openDB_env_soc_events();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_env_soc_events, "readwrite");
+        const store = transaction.objectStore(storeName_env_soc_events);
+        store.put({ id: "state_data_env_soc_events", data });
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+```
+
+
+```js
+// needed to correctly initialize the chart
+const template_data_env_soc_events_workbook = FileAttachment("/data/internal/project_incidents_template_minimal.xlsx").xlsx()
+```
+
+```js
+// needed to correctly initialize the chart
+const template_data_env_soc_events = template_data_env_soc_events_workbook.sheet(0, {
+  headers: true,
+  //range: "A1:11",
+  });
+//display(template_data_env_soc_events)
+```
+
+
+```js
+/// Initialize state_data with IndexedDB or template data
+let state_data_env_soc_events = Mutable(await getData_env_soc_events ());
+
+function swap_data_env_soc_events(data) {
+  state_data_env_soc_events.value = data;
+}
+
+(async function(d) {
+    return d === null ? "pending file selection" : state_data_env_soc_events.value = await d.json();
+})(local_file_env_soc_events);
+```
+
+
+```js
+// removing view here temporarily
+const load_template_data_env_soc_events = Inputs.button("Reset Template", {reduce: () => swap_data_env_soc_events(template_data_env_soc_events)})
+```
+
+
+```js
+ const report_env_soc_events  = (async () => {
+  try {
+    const wb =
+      await (local_file_env_soc_events.xlsx?.() ?? local_file_env_soc_events);
+    return wb.sheet(0, { headers: true });
+  } catch (error) {
+    console.warn("error with file", error);
+    return state_data_env_soc_events;
+  }
+})();
+
+```
+
+
+
+```js
+// Optional auto-persist
+ await saveData_env_soc_events(report_env_soc_events);
+```
+
+
+
+```js
+display(report_env_soc_events)
+```
+
+
+
+```js
+const local_file_analyst_risk_modifiers = view(Inputs.file({label: "Analyst Modifiers", accept: ".xlsx"}));
+//display(local_file_analyst_risk_modifiers_workbook);
+```
+
+```js
+// IndexedDB Setup
+const dbName_analyst_risk_modifiers  = "analyst_risk_modifiers";
+const dbVersion_analyst_risk_modifiers  = 1;
+const storeName_analyst_risk_modifiers  = "insight_all";
+```
+
+```js
+// Function to open or create IndexedDB
+async function openDB_analyst_risk_modifiers () {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName_analyst_risk_modifiers , dbVersion_analyst_risk_modifiers );
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(storeName_analyst_risk_modifiers , { keyPath: "id" });
+        };
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to get data from IndexedDB
+async function getData_analyst_risk_modifiers () {
+    const db = await openDB_analyst_risk_modifiers();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_analyst_risk_modifiers , "readonly");
+        const store = transaction.objectStore(storeName_analyst_risk_modifiers );
+        const request = store.get("state_data_analyst_risk_modifiers");
+        
+        request.onsuccess = () => resolve(request.result?.data ?? template_data_analyst_risk_modifiers);
+        request.onerror = () => reject(request.error);
+    });
+}
+```
+
+```js
+// Function to save data to IndexedDB
+async function saveData_analyst_risk_modifiers(data) {
+    const db = await openDB_analyst_risk_modifiers();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName_analyst_risk_modifiers, "readwrite");
+        const store = transaction.objectStore(storeName_analyst_risk_modifiers);
+        store.put({ id: "state_data_analyst_risk_modifiers", data });
+        
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+    });
+}
+```
+
+
+```js
+// needed to correctly initialize the chart
+const template_data_analyst_risk_modifiers_workbook = FileAttachment("/data/internal/risk_modifiers_template_minimal.xlsx").xlsx()
+```
+
+```js
+// needed to correctly initialize the chart
+const template_data_analyst_risk_modifiers = template_data_analyst_risk_modifiers_workbook.sheet(0, {
+  headers: true,
+  //range: "A1:11",
+  });
+//display(template_data_analyst_risk_modifiers)
+```
+
+
+```js
+/// Initialize state_data with IndexedDB or template data
+let state_data_analyst_risk_modifiers = Mutable(await getData_analyst_risk_modifiers ());
+
+function swap_data_analyst_risk_modifiers(data) {
+  state_data_analyst_risk_modifiers.value = data;
+}
+
+(async function(d) {
+    return d === null ? "pending file selection" : state_data_analyst_risk_modifiers.value = await d.json();
+})(local_file_analyst_risk_modifiers);
+```
+
+
+```js
+// removing view here temporarily
+const load_template_data_analyst_risk_modifiers = Inputs.button("Reset Template", {reduce: () => swap_data_analyst_risk_modifiers(template_data_analyst_risk_modifiers)})
+```
+
+
+```js
+ const report_analyst_risk_modifiers  = (async () => {
+  try {
+    const wb =
+      await (local_file_analyst_risk_modifiers.xlsx?.() ?? local_file_analyst_risk_modifiers);
+    return wb.sheet(0, { headers: true });
+  } catch (error) {
+    console.warn("error with file", error);
+    return state_data_analyst_risk_modifiers;
+  }
+})();
+
+```
+
+
+
+```js
+// Optional auto-persist
+ await saveData_analyst_risk_modifiers(report_analyst_risk_modifiers);
+```
+
+
+
+```js
+display(report_analyst_risk_modifiers)
+```
+
+
+
+
+```js
 const outcomes_survey = report_insight_outcomes_survey
+
+//await FileAttachment("/data/internal/outcomes_survey.csv").csv()
 ```
 
 ```js
 const 
 trips_with_visits = report_insight_trips_w_visits
+
+//await FileAttachment("/data/internal/trips-w-project-visits_report1754574558556.csv").csv()
 ```
 
 ---
@@ -351,7 +735,7 @@ Calculating project E&S Risk Scores is accomplished in five steps:
 2. Generate composite E, S, and G scores
 3. Calculate country-adjusted ESG score.
 4. Factor context data on qualitative risk and mitigants (sum of positive and negative points).
-5. Calculate final risk value [(E&S catgeorization * country-adjusted ESG score ) + net <mark>context</mark> adjustment].
+5. Calculate final risk value [(E&S catgeorization * country-adjusted ESG score ) + net project adjustment].
 
 <br/>
 
@@ -417,15 +801,19 @@ w_{\text{EnvCat}} =
 
 85 &
 \text{if }
-\text{EnvCat} = A \\
+\text{EnvCat} = A, FI-A \\
 
 50 &
 \text{if }
-\text{EnvCat} = B \\
+\text{EnvCat} = B, FI-B \\
 
-30 &
+35 &
 \text{if }
-\text{EnvCat} = C \\
+\text{EnvCat} = C, FI-C \\
+
+15 &
+\text{if }
+\text{EnvCat} = D \\
 
 \end{cases}
 ```
@@ -435,8 +823,12 @@ w_{\text{EnvCat}} =
 // Environmental category weights
 const envCategoryWeight = ({ 
   A: 85,
+  "FI A/Fund A": 85,
   B: 50,
-  C: 30
+  "FI B/Fund B": 50,
+  C: 35,
+  "FI C/Fund C": 35,
+  D: 15
   })
 ```
 
@@ -486,7 +878,7 @@ display((data => {
 
 <br/>
 
-The Country Risk Index (CRI) is derived from [external global ESG risk indices](/indices/contextual-risk-indices) and combined into a single, composite ESG score.
+The Country Risk Index (CRI) is derived from [external global ESG risk indices](/indices/contextual-risk-indices.html) and combined into a single, composite ESG score.
 
 Reference available in the model are:
 
@@ -655,9 +1047,10 @@ display(epiMap_risk_map)
 **`ND-GAIN =`**
 
 ```js
-const nd_gain2025_workbook = await FileAttachment("/data/external/nd_gain_countryindex_2025.zip").zip()
+//const nd_gain2025_workbook = await FileAttachment("/data/external/nd_gain_countryindex_2025.zip").zip()
 
-const nd_gain2025 = await nd_gain2025_workbook.file("resources/gain/gain.csv").csv()
+//const nd_gain2025 = await nd_gain2025_workbook.file("resources/gain/gain.csv").csv()
+const nd_gain2025 = await FileAttachment("/data/external/nd_gain_countryindex_2025/resources/gain/gain.csv").csv()
 display(nd_gain2025)
 ```
 
@@ -1092,11 +1485,12 @@ display(freedom_index_risk_map_normalized_inverted)
 
 
 ```js
-const globalSlaveryIndex_zip = FileAttachment("/data/external/2023-Global-Slavery-Index-Data-dd6d042a-e404-405a-8956-de68d59a11aa.zip").zip()
+//const globalSlaveryIndex_zip = FileAttachment("/data/external/2023-Global-Slavery-Index-Data-dd6d042a-e404-405a-8956-de68d59a11aa.zip").zip()
 ```
 
 ```js
-const globalSlaveryIndex_workbook = globalSlaveryIndex_zip.file("2023-Global-Slavery-Index-Data.xlsx").xlsx()
+//const globalSlaveryIndex_workbook = globalSlaveryIndex_zip.file("2023-Global-Slavery-Index-Data.xlsx").xlsx()
+const globalSlaveryIndex_workbook = await FileAttachment("/data/external/2023-Global-Slavery-Index-Data/2023-Global-Slavery-Index-Data.xlsx").xlsx()
 ```
 
 ```js
@@ -1247,14 +1641,15 @@ display(gii2023_dataMap_normalized)
 <br/>
 
 **`Worldwide Governance Indicators (WGI) =`**
-<mark>!!!!!!!!!!!!!!!!!!!!!!!!</mark>
+
 
 ```js
-const wgidataset_excel = FileAttachment("/data/external/wgidataset_with_sourcedata_excel.zip").zip()
+//const wgidataset_excel = FileAttachment("/data/external/wgidataset_with_sourcedata_excel.zip").zip()
 ```
 
 ```js
-const wgidataset_workbook = wgidataset_excel.file("wgidataset_with_sourcedata.xlsx").xlsx()
+//const wgidataset_workbook = wgidataset_excel.file("wgidataset_with_sourcedata.xlsx").xlsx()
+const wgidataset_workbook = FileAttachment("/data/external/wgidataset_with_sourcedata_excel/wgidataset_with_sourcedata.xlsx").xlsx()
 ```
 
 ```js
@@ -1313,7 +1708,8 @@ display(WGI_2023_cc)
 
 ```js
 const WGI_2023_cc_dataMap = new Map(WGI_2023_cc.map(d => [d.countryname, d["estimate"]]));
-display(WGI_2023_cc_dataMap)
+display(WGI_2023_cc_dataMap);
+display(invert(normalizeWRI(WGI_2023_cc_dataMap)))
 ```
 
 
@@ -1471,7 +1867,7 @@ display(cpi_data)
 
 ```js
 const cpi_dataMap = new Map(cpi_data.map(d => [d["Country / Territory"], d["CPI 2024 score"]]));
-//display(cpi_dataMap)
+display(cpi_dataMap)
 ```
 
 
@@ -1907,9 +2303,10 @@ display((data => {
 ```
 
 
+
 ---
 
-## Step 3. Sector Risk Ratings
+## Step 3. Sector Risk Index (SRI)
 
 EBRD has created sector risk ratings for further contextual nuance.
 
@@ -1918,7 +2315,8 @@ const EBRD_sector_risk_workbook = await FileAttachment("/data/external/ESMS-ESMS
 ```
 
 ```js
-const sector_risk = EBRD_sector_risk_workbook.sheet(0, {range: "A2:", headers: true})
+const sector_risk = EBRD_sector_risk_workbook.sheet(0, {range: "A2:", headers: true});
+display(sector_risk)
 ```
 
 ```js
@@ -2255,7 +2653,7 @@ function getPreferredNaceSet(row) {
 
 ```js
 // === 9) FINAL: annotate each project with environment/social/overall ===
-const portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk = ESRS_countryAdjusted.map(row => {
+const portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk = active_projects_ES_risk_numeric_CRI.map(row => {
   const { usedNaicsPrefix, nace } = getPreferredNaceSet(row);
   const risks = riskForNaceSet(nace);
 
@@ -2277,31 +2675,92 @@ const portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk = ESRS_countryAdjuste
 
 <br/>
 
-**Step 3 Output: Portfolio data including Sector Risk Ratings** 
+**Step 3 Output: Portfolio data including SRI** 
+
 
 ```js
-display(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk)
+function normalize_EBRD_sectors(data) {
+  const map = { Low: 33.333, Medium: 66.666, High: 99.999 };
+  return data.map(d => ({
+    ...d,
+    EBRD_sector_risk_environment_numeric: map[d.EBRD_sector_risk_environment] || null,
+    EBRD_sector_risk_social_numeric: map[d.EBRD_sector_risk_social] || null,
+    EBRD_sector_risk_overall_numeric: map[d.EBRD_sector_risk_overall] || null
+  }));
+};
 ```
----
+
+```js
+const portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk_normalized = normalize_EBRD_sectors(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk)
+```
+
+```js
+display(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk_normalized)
+```
+
+
+```js
+view(Inputs.table(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk_normalized, {columns: [
+  "Project Name",
+  "E&S Category Numeric",
+  "Country Risk Index, 2025",
+  "_naics_used_for_lookup",
+  "_nace_matched",
+  "_nace_risk_keys_used",
+  "EBRD_sector_risk_environment",
+  "EBRD_sector_risk_social",
+  "EBRD_sector_risk_overall",
+  "EBRD_sector_risk_environment_numeric",
+  "EBRD_sector_risk_social_numeric",
+  "EBRD_sector_risk_overall_numeric",
+  "E&S Category Numeric_factor",
+  "EBRD_sector_risk_overall_numeric_factor",
+  ]}))
+```
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk.csv', 'Download E&S Risk w/ EBRD sector rating');
+})(normalize_EBRD_sectors(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk)));
+```
 
 
 
 
 ---
 
-## Step 4. Country-Adjusted ESRS Score
+## Step 4. CRI-, SRI-Adjusted ESRS
 
 <br/>
 
-This step combines the ESRS and CRI to create a Country-Adjusted ESRS.  This weighted value assigned to each scoring component (_ESRS vs. CRI_) can be defined as a variable ${tex` \omega`}.  The factored score is thus computed as:
+This step factors the ESRS against country and sector risks scores as a ternary weighted average.
+
+
+${tex`ESRS_{adjusted(i)} = EnvCat_i \cdot CRI_i \cdot SRI_i \quad \in [0,1]`}
+
+
+
+<!--
+This weighted value assigned to each scoring component (_ESRS vs. CRI vs. SRI) can be defined as a variable ${tex` \omega`}.  
+-->
+
+<!--
+The factored score is thus computed as:
 
 ${tex`ESRS_{countryAdjusted(i)} = (1 - \omega) \cdot EnvCat + \omega \cdot C`}
 
 Where ${tex`\omega =`} ${omega}
+-->
+
 
 ```js
-const omega = view(Inputs.range([0.1,0.9], {step: 0.1, value: 0.3}))
+// removing view
+//const omega = view(Inputs.range([0.1,0.9], {step: 0.1, value: 0.3}))
+//display(omega)
 ```
+
 
 ```js
 const projection = ({ width, height, angle = 0 }) => {
@@ -2345,8 +2804,8 @@ const projection = ({ width, height, angle = 0 }) => {
 }
 ```
 
-```js
-const normalize = ({ a, b, c, ...options } = {}) => {
+```js 
+const normalize_channels = ({ a, b, c, ...options } = {}) => {
   if (a == null) throw new Error("missing channel a");
   if (b == null) throw new Error("missing channel b");
   if (c == null) throw new Error("missing channel c");
@@ -2424,8 +2883,9 @@ const tickLabels = (
     })
   );
 }
+```
 
-
+```js
 const labels = (data, options) =>
   Plot.text(data, {
     x: [1.075, -0.025, -0.025],
@@ -2438,7 +2898,7 @@ const labels = (data, options) =>
 ```js
 function slider({
   r = 5,
-  fill = "red",
+  fill = "steelblue",
   constrain = true,
   value = [1 / 3, 1 / 3, 1 / 3],
   ...options
@@ -2507,14 +2967,17 @@ function slider({
       return g;
     }
   });
-}
+};
+// Generator of the slider’s values
+//const sliderGen = Generators.input(slider);
 ```
+
 
 ```js
 function combo({
-  labels = ["a", "b", "c"],
+  labels = ["E&S Category", "Country Risk", "Sector Risk"],
   value = [1 / 3, 1 / 3],
-  step = 0.001
+  step = 0.01
 } = {}) {
   const n = d3.sum(value);
   for (let i = 0; i < 3; i++) value[i] = (value[i] ?? 0) / n;
@@ -2550,7 +3013,7 @@ function ternarySync(a, b, c) {
 const ternary = ({
   projection,
   graticule,
-  normalize,
+  normalize_channels,
   sphere: Plot.sphere,
   tickLabels,
   labels,
@@ -2558,80 +3021,247 @@ const ternary = ({
   combo
 })
 ```
+<br/>
+
+```js
+const x = view(Inputs.bind(ternary.combo(), plot))
+```
 
 
-
-
-```js echo
-const z = view(Plot.plot({
+```js
+// view here is giving me problems...
+const plot = Plot.plot({
   width: 350,
   projection: { type: ternary.projection, inset: 25 },
   marks: [
     Plot.sphere(),
     ternary.graticule(),
-    ternary.slider(),
-    ternary.labels(["a", "b", "c"])
+    ternary.slider({ value: [55, 30, 15] }),
+    ternary.labels(["E&S Category", "Country Risk", "Sector Risk"])
   ]
-}));
+});
+display(plot)
+```
 
-const x = view(Inputs.bind(ternary.combo(), z));
-display(x)
+```js
+display(z);
+```
+
+```js
+// VALUE VIEW (read-only display that stays in sync)
+const z = Generators.input(plot);  // <- dynamic {a,b,c}
+```
+
+
+```js
+//display(x)
 ```
 
 
 
 
+```js
+//const es_cat_select = view(Inputs.range([0,1], {label: "E&S Category", value: 0.600 ,step: 0.001}));
+//const country_select = view(Inputs.range([0,1], {label: "CRI", value: 0.250, step: 0.001}));
+//const sector_select = view(Inputs.range([0,1], {label: "SRI", value: 0.150, step: 0.001}));
+```
 
+```js
+function normalize_selection(a,b,c) {
+  const s = a + b + c;
+  if (s === 0) return [1/3, 1/3, 1/3]; // fallback
+  return [a/s, b/s, c/s];
+}
+```
 
+```js
+//const ES_CRI_SRI_factors_weights = (() => {
+//  const [es, country, sector] =
+//    normalize_selection(es_cat_select, country_select, sector_select);
+//  return { es, country, sector };
+//})();
+```
 
-
-
-
-
+<!--
+```js
+const stacked_bar = Plot.plot({
+  height: 50,
+  marginLeft: 80,
+  x: { domain: [0, 1], label: "Total = 1 →" },
+  y: { axis: null },
+  color: {
+    legend: true,
+    domain: ["E&S", "CRI", "SRI"], // ensures stable color ↔ label mapping
+    range: d3.schemeBlues[6].slice(3) // selecting darker blues
+    //scheme: "blues",               // monochrome blue
+    // reverse: true
+  },
+  marks: [
+    Plot.barX(
+      Object.entries(ES_CRI_SRI_factors_weights).map(([k, v]) => ({
+        label: { es: "E&S", country: "CRI", sector: "SRI" }[k] ?? k,
+        value: v
+      })),
+      Plot.stackX({
+        x: "value",
+        y: () => "Weights",
+        fill: "label",
+        stroke: "white",
+        strokeWidth: 1
+      })
+    )
+  ]
+});
+display(stacked_bar)
+```
+-->
 
 
 <br/>
 
-**Step 4 Output: Portfolio data including country-adjusted ESRS** 
-
-Portfolio P with composite `CRI` values and country-adjusted `ESRS` scores:</sub> 
+**Step 4 Output: Portfolio data including CRI- and SRI-adjusted ESRS** 
 
 
 ```js
-const ESRS_countryAdjusted = active_projects_ES_risk_numeric_CRI.map(d => ({
-  ...d,
-  "ESRS Country Adjusted": 
-    ((1 - omega) * d["E&S Category Numeric"]) + (omega * d["Country Risk Index, 2025"])
-}));
-display(ESRS_countryAdjusted)
+//display(ESRS_adjusted_for_CRI_and_SRI[0]["ESRS_adjustment_calculated"])
 ```
 
+```js
+/**
+ * data: array of rows (e.g., project_data)
+ * w: { es, country, sector } — e.g., ES_CRI_SRI_factors_weights
+ */
+//function ESRS_adjustment_calc(data, w) {
+//  const esW = +w?.es || 0;          // E&S weight
+//  const criW = +w?.country || 0;    // CRI weight
+//  const sriW = +w?.sector || 0;     // SRI weight
+
+//  return data.map(row => {
+//    const esVal  = +row["E&S Category Numeric"] || 0;
+//    const criVal = +row["Country Risk Index, 2025"] || 0;
+//    const sriVal = +row["EBRD_sector_risk_overall_numeric"] || 0;
+
+//    const score = esW * esVal + criW * criVal + sriW * sriVal;
+
+//    return {
+//      ...row,
+      // store the weights alongside for transparency
+//      "E&S Category Numeric_weight": esW,
+//      "Country Risk Index, 2025_weight": criW,
+//      "EBRD_sector_risk_overall_numeric_weight": sriW,
+//      "ESRS_adjustment_calculated": score
+//    };
+//  });
+//}
+function ESRS_adjustment_calc(data, z) {
+    const a = +z?.a || 0,
+        b = +z?.b || 0,
+        c = +z?.c || 0;
+    return data.map(row => {
+        const e = +row["E&S Category Numeric"] || 0;
+        const country = +row["Country Risk Index, 2025"] || 0;
+        const sector = +row["EBRD_sector_risk_overall_numeric"] || 0;
+        const score = e * a + country * b + sector * c;
+        return {
+            ...row,
+            "E&S Category Numeric_factor": a,
+            "Country Risk Index, 2025_factor": b,
+            "EBRD_sector_risk_overall_numeric_factor": c,
+            "ESRS_adjustment_calculated": score
+        };
+    });
+}
+
+```
+
+
+
+```js
+//triangle of sadness
+const ESRS_adjusted_for_CRI_and_SRI = ESRS_adjustment_calc(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk_normalized, z);
+//const ESRS_adjusted_for_CRI_and_SRI = ESRS_adjustment_calc(portfolio_ESRS_countryAdjusted_with_EBRD_sector_risk_normalized, ES_CRI_SRI_factors_weights);
+display(ESRS_adjusted_for_CRI_and_SRI)
+```
+
+
+
+
+```js
+view(Inputs.table(ESRS_adjusted_for_CRI_and_SRI, {columns: [
+  "Project Name",
+  //"E&S Category Numeric",
+  //"Country Risk Index, 2025",
+  //"EBRD_sector_risk_overall",
+  //"EBRD_sector_risk_overall_numeric",
+  "E&S Category Numeric_factor",
+  "Country Risk Index, 2025_factor",
+  "EBRD_sector_risk_overall_numeric_factor",
+  "ESRS_adjustment_calculated",
+  //"Country Risk Index, 2025",
+  //"EBRD_sector_risk_overall_numeric_factor",
+  //"ESRS_adjustment_calculated",
+  ]}))
+```
 
 
 ```js
 display((data => {
   const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
-  return download(blob, 'ESRS_countryAdjusted.csv', 'Download ESRS - Country Adjusted');
-})(ESRS_countryAdjusted));
+  return download(blob, 'ESRS_adjusted_for_CRI_and_SRI.csv', 'Download Projects with ESRS adjusted for CRI and SRI');
+})(ESRS_adjusted_for_CRI_and_SRI));
+```
+
+
+```js
+///const ESRS_countryAdjusted = active_projects_ES_risk_numeric_CRI.map(d => ({
+///  ...d,
+///  "ESRS Country Adjusted": 
+///    ((1 - omega) * d["E&S Category Numeric"]) + (omega * d["Country Risk Index, 2025"])
+///}));
+///display(ESRS_countryAdjusted)
 ```
 
 
 
+```js
+///display((data => {
+///  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+///  return download(blob, 'ESRS_countryAdjusted.csv', 'Download ESRS - Country Adjusted');
+///})(ESRS_countryAdjusted));
+```
+
+
 ---
 
+
+---
+
+
 <br/>
+
 
 ## Step 5. Red Flags and Risk Mitigants
 
 <br/>
 Projects can be annotated with additional contextual risk data to dynamically modify factored scores based on up-to-date intelligence.  Available contextual modifiers and values are:
 
-|Modifier|Value|
-|---|---|
-|${tex`\text{redFlag}_i`} | +10 |
-|${tex`\text{monitoredLast2Y}_i`}  | -5 |
-|${tex`\text{multipleLenders}_i`} | -5 |
-|${tex`\text{iescReporting}_i`} | -5 |
+| Modifier                        | Variable Name                                | Value   |
+|---------------------------------|----------------------------------------------|---------|
+| Monitored in Last 2 Years       | ${tex`\text{monitoredLast2Y}_i`}             | -20      |
+| Multiple Lenders                | ${tex`\text{multipleLenders}_i`}             | -2      |
+| Client Reporting                  | ${tex`\text{clientReporting}_i`}               | -2      |
+| IESC Reporting                  | ${tex`\text{iescReporting}_i`}               | -2      |
+| Adequate IESC Supervision       | ${tex`\text{adequateIESCSupervision}_i`}               | -5      |
+| 008 Flag                    | ${tex`\text{redFlag}_i`}                      | +5   |
+| Significant E&S Incident       | ${tex`\text{redFlag}_i`}                      | +5   |
+| Close Proximity to Other Projects | ${tex`\text{closeProximity}_i`}              | +3      |
+| Pre-Construction Phase          | ${tex`\text{constructionPhase}_i`}           | +2      |
+| Construction Phase              | ${tex`\text{constructionPhase}_i`}           | +1      |
+| Significant Community Risk      | ${tex`\text{significantCommunityRisk}_i`}    | +10     |
+| Significant Labor Risk          | ${tex`\text{significantLaborRisk}_i`}        | +2      |
+| Significant Environmental Risk  | ${tex`\text{significantEnvironmentalRisk}_i`}        | +2      |
+| Strategic Interest              | ${tex`\text{strategicInterest}_i`}           | +1      |
+| Analyst Adjustment              | ${tex`\text{analystAdjustment}_i`}           | ±5      |
 
 
 <!--
@@ -2642,18 +3272,34 @@ Open accountability case = +10
 A project's contextual risk value is calculated as the sum of all applicable modifiers: 
 
 ```tex
+\begin{aligned}
 \mathrm{context}_i
-=\;\mathrm{red\_flag\_008}_i
-+\;\mathrm{monitored\_last\_2\_years}_i
-+\;\mathrm{multiple\_lenders}_i
-+\;\mathrm{iesc\_reporting}_i.
+&+ \;\mathrm{monitoredLast2Y}_i \quad {\scriptsize(\in [-20])} \\
+&+ \;\mathrm{multipleLenders}_i \quad {\scriptsize(\in [-2])} \\
+&+ \;\mathrm{clientReporting}_i \quad {\scriptsize(\in [-2])} \\
+&+ \;\mathrm{iescReporting}_i \quad {\scriptsize(\in [-2])} \\
+&+ \;\mathrm{adequateIESCSupervision}_i \quad {\scriptsize(\in [-5])} \\
+&+ \;\mathrm{flag008}_i \quad {\scriptsize(\in [+5])} \\
+&+ \;\mathrm{significantIncident}_i \quad {\scriptsize(\in [+5])} \\
+&+ \;\mathrm{closeProximity}_i \quad {\scriptsize(\in [+3])} \\
+&+ \;\mathrm{preConstructionPhase}_i \quad {\scriptsize(\in [+2])} \\
+&+ \;\mathrm{constructionPhase}_i \quad {\scriptsize(\in [+1])} \\
+&+ \;\mathrm{significantCommunityRisk}_i \quad {\scriptsize(\in [+10])} \\
+&+ \;\mathrm{significantLaborRisk}_i \quad {\scriptsize(\in [+2])} \\
+&+ \;\mathrm{significantEnvironmentalRisk}_i \quad {\scriptsize(\in [+2])} \\
+&+ \;\mathrm{strategicInterest}_i \quad {\scriptsize(\in [+1])} \\
+&+ \;\mathrm{analystAdjustment}_i \quad {\scriptsize(\in [-5,5])}
+\end{aligned}
+
 ```
 
 <br/>
 
+
+<!--
+
 Context Score: **${context_score === undefined ? "undefined" : context_score}**<br/><em>Note that the score is undefined until a selection is made</em>.
-
-
+-->
 <!--
 
   - ${tex`\text{redFlag}`} = adverse E&S events as noted in the 008
@@ -2664,7 +3310,7 @@ Context Score: **${context_score === undefined ? "undefined" : context_score}**<
   - ${tex`\text{analystTag}`}
   - ${tex`\text{unsatifiedObligation}`} = signals unsatisfied institutional obligations
 -->
-
+<!--
 ```js
 const offsets  = [red_flag_008, monitored_last_2_years, multiple_lenders, iesc_reporting];
 ```
@@ -2724,109 +3370,28 @@ const iesc_reporting = view(Inputs.radio(new Map([["true", -5], ["false", 0], ["
 ```js
 display(iesc_reporting)
 ```
-
-
----
-**Step 5 Output :** **<mark>Portfolio with Flag-Adjusted ESG risk scores</mark>** 
-  
-
-
-```js
-const ESRScontext = writeContextValue_example(ESRS_countryAdjusted);
-//display(ESRScontext[0]["context_score"])
-```
-
-```js
-function writeContextValue_example(data) {
-  return data.map(d => {
-    const offsets = [
-      red_flag_008,
-      monitored_last_2_years,
-      multiple_lenders,
-      iesc_reporting
-    ];
-
-    const definedNumericValues = offsets.filter(v => typeof v === "number");
-    const allNA = offsets.every(v => v === "n/a");
-
-    const context_score = allNA
-      ? "n/a"
-      : definedNumericValues.length > 0
-        ? definedNumericValues.reduce((sum, v) => sum + v, 0)
-        : undefined;
-
-    return {
-      ...d,
-      context_score
-    };
-  });
-}
-```
-
-
-```js
-function writeContextValue(data) {
-  return data.map(d => {
-    const offsets = [
-      red_flag_008,
-      monitored_last_2_years,
-      multiple_lenders,
-      iesc_reporting
-    ];
-
-    const definedNumericValues = offsets.filter(v => typeof v === "number");
-    const allNA = offsets.every(v => v === "n/a");
-
-    const context_score = allNA
-      ? "n/a"
-      : definedNumericValues.length > 0
-        ? definedNumericValues.reduce((sum, v) => sum + v, 0)
-        : undefined;
-
-    return {
-      ...d,
-      context_score
-    };
-  });
-}
-```
-
-
-**`Portfolio with 008 Flags`**
-
-
-```js
-display(projects_with_ES_outcomes);
-```
-
-
-```js
-let outcomes_survey_year_selection_input = Inputs.select(
-  ["2022","2023"],
-  //fiscal_years,
-  {
-  label: "Select a Year",
-  value: "2023"
-  }
-)
-
-let outcomes_survey_year_selection = Inputs.bind(Inputs.select(
-  ["2022","2023"],
-  //fiscal_years,
-  {
-  label: "Select a Year",
-  value: "2023"
-  }
-), outcomes_survey_year_selection_input)
-```
-
-```js
-const outcomes_survey_year_select = Generators.input(outcomes_survey_year_selection);
-```
+-->
 
 <br/>
 
-Quickly browse the 008 Data by year:
+
+Auto-calculate flags where supported data is available:
+
+
+
+<br/>
+
+**`Portfolio with DOS/008 Flags`**
+
+
+This step uses the dataset of project 008 submission (all records):
+
+```js
+display(outcomes_survey_by_year)
+```
+
+
+Quickly browse the DOS/008 data by year:
 
 ```js
 Inputs.bind(Inputs.select(
@@ -2841,15 +3406,79 @@ Inputs.bind(Inputs.select(
 
 
 ```js
-const outcomes_survey_by_year = outcomes_survey.filter(d => d["Application: Fiscal Year"] == outcomes_survey_year_select);
+//const search_table = view(Inputs.search(outcomes_survey_by_year, {label: "Search 008"} ));
 ```
 
+```js
+//display(search_table)
+```
+
+
+
+```js
+const outcomes_survey_by_year = outcomes_survey
+  .filter(d => 
+    d["Application: Fiscal Year"] == outcomes_survey_year_select &&
+    d["Project Name"]?.trim() !== "" // drop blanks/nulls
+  )
+  .sort((a, b) => a["Project Name"].localeCompare(b["Project Name"]));
+```
+
+
+```js
+// helpers so we don't repeat ourselves
+const redOnYes = () => value => {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  if (value === "Yes") {
+    div.style.backgroundColor = "#b65436";
+    div.style.color = "white";
+  } else if (value === "Do not know") {
+    div.style.backgroundColor = "#ffd994";
+    div.style.color = "black";
+  }
+  return div;
+};
+
+const redOnNo = () => value => {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  if (value === "No") {
+    div.style.backgroundColor = "#b65436";
+    div.style.color = "white";
+  } else if (value === "Do not know") {
+    div.style.backgroundColor = "#ffd994";
+    div.style.color = "black";
+  }
+  return div;
+};
+
+const communityEngagementFormat = value => {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  if (value === "No") {
+    div.style.backgroundColor = "#b65436";
+    div.style.color = "white";
+  } else if (value === "Yes") {
+    div.style.backgroundColor = "green";
+    div.style.color = "white";
+  } else if (value === "Do not know") {
+    div.style.backgroundColor = "#ffd994";
+    div.style.color = "black";
+  }
+  return div;
+};
+
+```
+
+```js
+//const search_outcomes_survey_by_year = view(Inputs.search(outcomes_survey_by_year))
+```
 
 ```js
 view(Inputs.table(outcomes_survey_by_year, {
   columns: [
     "Project Name",
-    
     "Form 007/008: Form 007/008 Name",
     "Application: Application Number",
     "Project In Compliance",
@@ -2892,19 +3521,79 @@ view(Inputs.table(outcomes_survey_by_year, {
     "# Of Workers Laid Off": "# Of Workers Laid Off",
     "# Workers Laid Off": "# Workers Laid Off"
   },
+  // ✅ single, merged format object
+  format: {
+    // Red when "No"
+    "Project In Compliance": redOnNo(),
+
+    // Red when "Yes"
+    "Changes To Workforce": redOnYes(),
+    "Project Worker Layoffs": redOnYes(),
+    "Accidents Occurred": redOnYes(),
+    "Strikes Or Labor Disputes": redOnYes(),
+    "Disputes With Trade Union": redOnYes(),
+    "Project Involve Land Acquisition": redOnYes(),
+    "Community Strike Or Opposition": redOnYes(),
+    "Gender-Based Violence": redOnYes(),
+    "Project Cited Or Fined": redOnYes(),
+    "Project Involved In Dispute Resolution": redOnYes(),
+
+    // Special rules: Yes = green, No = red, Unknown = yellow
+    "Project Engaged With Communities": communityEngagementFormat
+  }
 }))
-
 ```
 
 
 
+
+
+<br/>
+
+We encode 008 values into the portfolio dataset&mdash;differentiating entries by year and identifying years where adverse events were reported: 
+
 ```js
-display(outcomes_survey_by_year)
+display(projects_with_ES_outcomes_yearly)
 ```
 
 
 ```js
-function writeOutcomesES(all_projects, outcomes_survey) {
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'projects_with_ES_outcomes.csv', 'Download Projects with E&S Outcomes');
+})(projects_with_ES_outcomes_yearly));
+```
+
+
+```js
+let outcomes_survey_year_selection_input = Inputs.select(
+  ["2022","2023"],
+  //fiscal_years,
+  {
+  label: "Select a Year",
+  value: "2023"
+  }
+)
+
+let outcomes_survey_year_selection = Inputs.bind(Inputs.select(
+  ["2022","2023"],
+  //fiscal_years,
+  {
+  label: "Select a Year",
+  value: "2023"
+  }
+), outcomes_survey_year_selection_input)
+```
+
+```js
+const outcomes_survey_year_select = Generators.input(outcomes_survey_year_selection);
+```
+
+<!--- --->
+
+
+```js
+function writeOutcomesES(ESRS_adjusted_for_CRI_and_SRI, outcomes_survey) {
   const attributesToTransfer = [
     "Form 007/008: Form 007/008 Name",
     "Application: Application Number",
@@ -2938,7 +3627,7 @@ function writeOutcomesES(all_projects, outcomes_survey) {
   }
 
   // Now merge the grouped data into all_projects
-  return all_projects.map(project => {
+  return ESRS_adjusted_for_CRI_and_SRI.map(project => {
     const name = project["Project Name"];
     const matchedByYear = grouped[name] || {};
 
@@ -2957,12 +3646,132 @@ function writeOutcomesES(all_projects, outcomes_survey) {
 ```
 
 ```js
-const projects_with_ES_outcomes = writeOutcomesES(active_projects, outcomes_survey);
+const projects_with_ES_outcomes = writeOutcomesES(ESRS_adjusted_for_CRI_and_SRI, outcomes_survey);
 ```
 
 
 
-----
+
+```js
+// --- config matching your table's red logic ---
+const YES_IS_ADVERSE = new Set([
+  "Changes To Workforce",
+  "Project Worker Layoffs",
+  "Accidents Occurred",
+  "Strikes Or Labor Disputes",
+  "Disputes With Trade Union",
+  "Project Involve Land Acquisition",
+  "Community Strike Or Opposition",
+  "Gender-Based Violence",
+  "Project Cited Or Fined",
+  "Project Involved In Dispute Resolution"
+]);
+```
+
+```js
+const NO_IS_ADVERSE = new Set([
+  "Project In Compliance",
+  "Project Engaged With Communities"
+]);
+```
+
+```js
+const NUMERIC_GT0_IS_ADVERSE = new Set([
+  "# Households Economically Displaced",
+  "# Households Physically Displaced",
+  "# Of Workers Laid Off",
+  "# Workers Laid Off"
+]);
+```
+
+```js
+// --- HELPERS ---
+const YEAR_RE = /,\s*(\d{4})$/;
+```
+
+```js
+const normalizeYesNo = v => {
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase();
+  if (["yes","y","true","1"].includes(s)) return true;
+  if (["no","n","false","0"].includes(s)) return false;
+  if (s === "do not know" || s === "unknown" || s === "n/a" || s === "") return "unknown";
+  return s; // leave anything else untouched
+};
+```
+
+```js
+const toNumber = v => {
+  if (v == null) return 0;
+  const s = String(v).replace(/[, ]+/g, "").trim();
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+};
+```
+
+```js
+// Derive the list of years that actually have at least one adverse indicator column
+function getRelevantYears(data) {
+  const years = new Set();
+  const adverseBases = new Set([
+    ...YES_IS_ADVERSE,
+    ...NO_IS_ADVERSE,
+    ...NUMERIC_GT0_IS_ADVERSE
+  ]);
+  // Look across some (or all) rows' keys
+  const keys = new Set(data.flatMap(d => Object.keys(d)));
+  for (const k of keys) {
+    const m = k.match(YEAR_RE);
+    if (!m) continue;
+    const base = k.replace(YEAR_RE, ""); // drop ", YYYY"
+    if (adverseBases.has(base)) years.add(m[1]);
+  }
+  return Array.from(years).sort(); // e.g. ["2022","2023"]
+}
+```
+
+```js
+// --- MAIN: annotate per-year adverse impact on each row ---
+function annotateAdverseImpactsByYear(rows) {
+  const years = getRelevantYears(rows);
+  return rows.map(row => {
+    const out = { ...row };
+    for (const y of years) {
+      const reasons = [];
+
+      // Yes => adverse
+      for (const base of YES_IS_ADVERSE) {
+        const key = `${base}, ${y}`;
+        if (key in row && normalizeYesNo(row[key]) === true) reasons.push(base);
+      }
+
+      // No => adverse
+      for (const base of NO_IS_ADVERSE) {
+        const key = `${base}, ${y}`;
+        if (key in row && normalizeYesNo(row[key]) === false) reasons.push(base);
+      }
+
+      // Numeric > 0 => adverse
+      for (const base of NUMERIC_GT0_IS_ADVERSE) {
+        const key = `${base}, ${y}`;
+        if (key in row && toNumber(row[key]) > 0) reasons.push(base);
+      }
+      
+      out[`adverse_impact_${y}`] = reasons.length > 0;
+      out[`adverse_reasons_${y}`] = reasons;
+    }
+    return out;
+  });
+}
+```
+
+```js
+const projects_with_ES_outcomes_yearly = annotateAdverseImpactsByYear(projects_with_ES_outcomes);
+```
+
+
+
+<!---   --->
 
 
 ```js
@@ -3012,7 +3821,7 @@ const attributeRegex = new RegExp(`^(${outcomes_ES_attributes.join("|")})(, \\d{
 
 
 ```js
-const filtered_projects_with_ES_outcomes = projects_with_ES_outcomes.filter(d =>
+const filtered_projects_with_ES_outcomes = projects_with_ES_outcomes_yearly.filter(d =>
   Object.keys(d).some(k => attributeRegex.test(k) && d[k] != null && d[k] !== "")
 );
 ```
@@ -3190,17 +3999,18 @@ function flag008(projects) {
   });
 }
 ```
+
+<!--
 For convenience, we can isolate only those project with adverse E&S records:
+-->
 
 ```js
-// Usage
-const projects_with_ES_outcomes_flagged = flag008(projects_with_ES_outcomes);
+const projects_with_ES_outcomes_flagged = flag008(projects_with_ES_outcomes_yearly);
 //display(projects_with_ES_outcomes_flagged)
 ```
 
 ```js
-// Usage
-display(projects_with_ES_outcomes_flagged.filter(d => d["008 flag"] === true))
+//display(projects_with_ES_outcomes_flagged.filter(d => d["008 flag"] === true))
 ```
 
 
@@ -3286,22 +4096,48 @@ display(downloadCSV(flagged_2023_projects))
 
 ---
 
-<br/>
 
+**`Portfolio Monitored in Past 2 Years`**
 
-**<mark>`Portfolio Monitored in Past 2 Years`</mark>**
-
+<!--
+_Trips with Visits_
 
 ```js
-display(flattenVisitsByFY(active_projects, trips_with_visits))
+const flagged008_with_trips = reconcileVisitsByFY(projects_with_ES_outcomes_flagged, trips_with_visits);
+//display(flagged008_with_trips)
 ```
+
+```js
+view(Inputs.table(flagged008_with_trips, {columns: [
+  "Project Name",
+  "E&S Category Numeric",
+  "Country Risk Index, 2025",
+  "_naics_used_for_lookup",
+  "_nace_matched",
+  "_nace_risk_keys_used",
+  "EBRD_sector_risk_environment",
+  "EBRD_sector_risk_social",
+  "EBRD_sector_risk_overall",
+  "EBRD_sector_risk_environment_numeric",
+  "EBRD_sector_risk_social_numeric",
+  "EBRD_sector_risk_overall_numeric",
+  "E&S Category Numeric_factor",
+  "EBRD_sector_risk_overall_numeric_factor",
+  "ESRS_adjustment_calculated",
+  "008 flag",
+  "Visited",
+  "Years Visited"
+  ]}))
+```
+-->
+
 
 ```js
 // Minimal-call API:
 //   result = flattenVisitsByFY(projects, trips_with_visits)
 //
 // Adds year-suffixed columns for all present fields below, plus Visited / Years Visited.
-function flattenVisitsByFY(projects, trips, opts = {}) {
+function reconcileVisitsByFY(projects, trips, opts = {}) {
   const defaults = {
     projectKey: "Project Name",
     fiscalYearKey: "Visit Fiscal Year",
@@ -3432,6 +4268,996 @@ function flattenVisitsByFY(projects, trips, opts = {}) {
 
 ```
 
+```js
+// --- Configuration -----------------------------------------------------------
+const DELIM = " | "; // delimiter used when multiple distinct values occur in a project-year
+
+//Exact column labels to carry over (Monitoring Activities)
+const MONITORING_FIELDS = [
+  "Monitoring Activity: Monitoring Activity Number",
+  "Monitoring Activity: ID",
+  "Comments",
+  "Contact",
+  "Completed?",
+  "Country",
+  "Department",
+  "Development Summary",
+  "DO",
+  "ECON Report Completed",
+  "ECON",
+  "ENV",
+  "ENV Report Completed",
+  "ENV Summary",
+  "Fiscal Year",
+  "Follow Up",
+  "If Other Activity type, describe here",
+  "Monitoring Activity Date",
+  "Maturity Date",
+  "Monitoring Activity Type",
+  "Officer Conducting Activity",
+  "Project ID",
+  "Site Visit Start Date",
+  "Site Visit Status",
+  "SOC",
+  "SOC Report Completed",
+  "SOC Summary",
+  "US Economic Impact Summary",
+  "Visit Number",
+  "Visit Reason",
+  "Monitoring Activity: Record Type",
+  "Monitoring Activity: Owner Name",
+  "Monitoring Activity: Owner Alias",
+  "Monitoring Activity: Owner Role",
+  "Monitoring Activity: Created By",
+  "Monitoring Activity: Created Alias",
+  "Monitoring Activity: Created Date",
+  "Monitoring Activity: Last Modified By",
+  "Monitoring Activity: Last Modified Alias",
+  "Monitoring Activity: Last Modified Date"
+];
+
+// Exact column labels to carry over (Trips with Visits)
+const TRIP_FIELDS = [
+  "Trip: Name",
+  "Project Visit: Visit Number",
+  "Trip: ID",
+  "Old Trip ID",
+  "Start Date",
+  "End Date",
+  "Trip Countries",
+  "Trip Officials",
+  "Project Visit: ID",
+  "Old Visit ID",
+  "Visit Fiscal Year",
+  "Project Visit Status",
+  "Visit Reason",
+  "Visit Reason (Other)",
+  "Project Visit: Record Type",
+  "Project Name: Project Owner: Division",
+  "Project Name: Eligible Evaluation/Site Visit Year",
+  "Project Name: Has been visited before?",
+  "Comments",
+  "Completed?",
+  "Country",
+  "Department",
+  "Development Summary",
+  "DFPM",
+  "DO",
+  "ECON",
+  "ECON Report Completed",
+  "ENV",
+  "ENV Report Completed",
+  "ENV Summary",
+  "Follow Up",
+  "Insurance",
+  "Monitoring Activity",
+  "MTU(ODC)",
+  "Officer",
+  "OIF(IFD)",
+  "PMD",
+  "Registration Number",
+  "SOC",
+  "SOC Report Completed",
+  "SOC Summary",
+  "Tech Dev Program",
+  "Trip End Date",
+  "Trip Start Date",
+  "Trip Team Lead",
+  "Trip: Created Date"
+];
+
+
+// Preferred join keys and date columns
+//const JOIN_KEY_PROJECTS = "Project Name";
+//const JOIN_KEY_MONITORING = "Project Name: Project Name";
+
+
+// Preferred join keys
+ // instead of "Project Name"
+const JOIN_KEY_PROJECTS = [
+  "Project Number",            // numeric where present
+  "Project Name: Project Number" // DCA where present
+];
+
+// Monitoring/trips files may expose the project number under several label styles
+const JOIN_KEY_MONITORING = [
+  "Project Name: Project Number",
+  "Project Number",
+  "Project: Project Number",        // include this as a just-in-case
+  "Project Name: Project ID",   // add ID variants: some reports carry numeric ID instead
+  "Project ID",
+];
+
+
+const TRIP_DATE_CANDS = [
+  "Trip Start Date", "Trip Start Date:", "Start Date", "Start Date:",
+  "Start Date.1", "End Date", "End Date:", "End Date.1", "Trip End Date", "Trip End Date:",
+  "Trip: Created Date", "Trip: Created Date:"
+];
+
+const TRIP_FISCAL_YEAR_CANDS = ["Visit Fiscal Year", "Visit Fiscal Year:"];
+
+const TRIP_ID_COLS = ["Project Visit: ID:", "Trip: ID:", "Old Visit ID:", "Old Trip ID:"];
+
+const MON_DATE_CANDS = [
+  "Monitoring Activity Date", "Monitoring Activity Date:",
+  "Site Visit Start Date", "Site Visit Start Date:",
+  "Monitoring Activity: Created Date", "Monitoring Activity: Created Date:"
+];
+
+const MON_FISCAL_YEAR_CANDS = ["Fiscal Year", "Fiscal Year:"];
+
+
+const MON_ID_COLS  = ["Monitoring Activity: ID:"];
+```
+
+
+
+```js
+
+// --- Helpers -----------------------------------------------------------------
+
+function normName(s) {
+  return (s ?? "").toString().replace(/\s+/g, " ").trim();
+}
+
+// Strip a single trailing ":" for output property names
+function outLabel(field) {
+  return field.replace(/:\s*$/, "");
+}
+
+
+// Accept "X" or "X:" labels interchangeably
+function keyVariants(k) { return k.endsWith(":") ? [k, k.slice(0, -1)] : [k, `${k}:`]; }
+
+
+
+// Try multiple candidate keys, tolerant of ":" variants, return normalized string
+function firstPresentJoinValue(row, candidates) {
+  for (const c of candidates) {
+    for (const v of keyVariants(c)) {
+      if (v in row && row[v] != null && String(row[v]).trim() !== "") {
+        // IMPORTANT: project number can be numeric -> force string + normalize
+        return normName(String(row[v]));
+      }
+    }
+  }
+  return null;
+}
+
+// Backwards-compatible: allow joinKey to be string or array of strings
+function resolveJoinValue(row, joinKey) {
+  const cands = Array.isArray(joinKey) ? joinKey : [joinKey];
+  for (const c of cands) {
+    for (const v of keyVariants(c)) {
+      if (v in row && row[v] != null && String(row[v]).trim() !== "")
+        return String(row[v]).replace(/\s+/g, " ").trim(); // normalize
+    }
+  }
+  return null;
+}
+
+// Find the first present key from candidates; also try with/without trailing colon.
+function firstPresentValue(row, candidates) {
+  for (const c of candidates) {
+    if (c in row && row[c] != null && String(row[c]).trim() !== "") return row[c];
+    const alt = c.endsWith(":") ? c.slice(0, -1) : `${c}:`;
+    if (alt in row && row[alt] != null && String(row[alt]).trim() !== "") return row[alt];
+  }
+  return null;
+}
+
+
+
+// Robust year parsing:
+//  - if number-like "2024" → 2024
+//  - if date-like, use Date and extract year
+//  - ignore anything outside [1990..2100]
+function parseYearSmart(v) {
+  if (v == null) return null;
+  const s = String(v).trim();
+  // numeric year
+  const yNum = Number(s);
+  if (Number.isFinite(yNum) && yNum >= 1990 && yNum <= 2100 && /^\d{4}$/.test(s)) return yNum;
+
+  // 4-digit substring in text
+  const m = s.match(/\b(19\d{2}|20\d{2}|2100)\b/);
+  if (m) return Number(m[1]);
+
+  // date parse
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    if (y >= 1990 && y <= 2100) return y;
+  }
+  return null;
+}
+
+
+function pickEventYear(row, dateCandidates, fiscalYearCandidates) {
+  const dateVal = firstPresentValue(row, dateCandidates);
+  const y1 = parseYearSmart(dateVal);
+  if (y1) return y1;
+  const fyVal = firstPresentValue(row, fiscalYearCandidates);
+  const y2 = parseYearSmart(fyVal);
+  return y2;
+}
+
+
+
+function pickDate(obj, candidates) {
+  for (const c of candidates) if (c in obj && obj[c]) return obj[c];
+  return null;
+}
+
+
+function firstPresentKey(obj, keys) {
+  return keys.find((k) => k in obj && obj[k] != null && String(obj[k]).trim() !== "");
+}
+
+
+function dedupeById(rows, idColumns, joinKeyCandidates = null) {
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const idKey = firstPresentKey(r, idColumns);
+    const idVal = idKey ? String(r[idKey]).trim() : "";
+    const projKeyVal = joinKeyCandidates ? (resolveJoinValue(r, joinKeyCandidates) || "") : "";
+    const sig = idVal ? `${projKeyVal}::${idKey}:${idVal}` : `${projKeyVal}::${JSON.stringify(r)}`;
+    if (!seen.has(sig)) { seen.add(sig); out.push(r); }
+  }
+  return out;
+}
+
+
+
+
+// Accumulate distinct values per (project, year, field) and counts per (project, year)
+function accumulate(rows, { joinKey, dateCands, fyCands, fields, idCols }) {
+  // pass joinKey candidates into dedupe so de-dup is project-scoped
+  const deduped = dedupeById(rows, idCols, Array.isArray(joinKey) ? joinKey : [joinKey]);
+
+  const values = new Map();
+  const counts = new Map();
+
+  for (const row of deduped) {
+    const pkey = resolveJoinValue(row, joinKey);  // ← robust
+    if (!pkey) continue;
+
+    const year = pickEventYear(row, dateCands, fyCands);
+    if (!year) continue;
+
+    const ck = `${pkey}::${year}`;
+    counts.set(ck, (counts.get(ck) ?? 0) + 1);
+
+    for (const field of fields) {
+      const val = firstPresentValue(row, [field]); // your existing tolerant value getter
+      if (val == null || String(val).trim() === "") continue;
+      const mapKey = `${pkey}::${year}::${field}`;
+      if (!values.has(mapKey)) values.set(mapKey, new Set());
+      values.get(mapKey).add(String(val).trim());
+    }
+  }
+  return { values, counts };
+}
+
+
+function applyToProjectRow(prow, pname, bucket, counts, fields, prefix) {
+  const out = { ...prow };
+  const years = Array.from(counts.keys())
+    .filter((k) => k.startsWith(`${pname}::`))
+    .map((k) => Number(k.split("::")[1]))
+    .filter((y) => Number.isFinite(y) && y >= 1990 && y <= 2100)
+    .sort((a, b) => a - b);
+
+  for (const y of years) {
+    const count = counts.get(`${pname}::${y}`) ?? 0;
+    if (count > 0) out[`${prefix}_count_${y}`] = count;
+
+    for (const field of fields) {
+      const key = `${pname}::${y}::${field}`;
+      if (!bucket.has(key)) continue;
+      const vals = Array.from(bucket.get(key).values()).sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+      if (!vals.length) continue;
+      out[`${outLabel(field)}_${y}`] = vals.join(DELIM); // flat string, no nested objects
+    }
+  }
+  return out;
+}
+
+
+// returns true if the enriched row shows activity in ANY of the given years
+function hadEventInYears(out, years) {
+  for (const y of years) {
+    const t = Number(out[`trip_count_${y}`] ?? 0);
+    const m = Number(out[`monitoring_count_${y}`] ?? 0);
+    if (t > 0 || m > 0) return true;
+
+    // Fallback: check a few reliable year-suffixed fields for any non-empty value
+    const probe = [
+      "Trip Start Date", "Trip End Date", "Project Visit: ID",
+      "Monitoring Activity Date", "Site Visit Start Date", "Monitoring Activity: ID"
+    ];
+    for (const base of probe) {
+      const key = `${base}_${y}`;
+      if (key in out && out[key] != null && String(out[key]).trim() !== "") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+```
+
+
+```js
+// Reusable predicate: does this row have ANY monitoring or trip activity in `year`?
+function hasEventForYear(row, year) {
+  const t = Number(row?.[`trip_count_${year}`] ?? 0);
+  const m = Number(row?.[`monitoring_count_${year}`] ?? 0);
+  if (t > 0 || m > 0) return true;
+
+  // Fallback: any non-empty field ending with _YYYY (excluding the count fields)
+  const suffix = `_${year}`;
+  for (const [k, v] of Object.entries(row)) {
+    if (
+      k.endsWith(suffix) &&
+      k !== `trip_count_${year}` &&
+      k !== `monitoring_count_${year}` &&
+      v != null &&
+      String(v).trim() !== ""
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+```
+
+<!-- We'll want to generalize this and improve handling of fields
+```js
+view(Inputs.table(
+  enriched_projects_flat.filter(r => hasEventForYear(r, 2024)),
+  { columns: ["Project Name",  "site_visited_in_past_two_years", "trip_count_2024", "monitoring_count_2024", "Monitoring Activity: Monitoring Activity Number_2024",
+  "Monitoring Activity: ID_2024", "Monitoring Activity Date_2024", "Monitoring Activity Type_2024"] }
+))
+```
+-->
+
+
+```js
+function reconcileProjectsFlatStrict(projects, trips_with_visits, monitoring_activities) {
+  // Accumulate trips and monitoring ONCE (keyed by normalized Project Number from the monitoring files)
+const tripsAcc = accumulate(trips_with_visits, {
+    joinKey: JOIN_KEY_MONITORING,
+    dateCands: TRIP_DATE_CANDS,
+    fyCands: TRIP_FISCAL_YEAR_CANDS,
+    fields: TRIP_FIELDS,
+    idCols: TRIP_ID_COLS
+  });
+
+  const monAcc = accumulate(monitoring_activities, {
+    joinKey: JOIN_KEY_MONITORING,
+    dateCands: MON_DATE_CANDS,
+    fyCands: MON_FISCAL_YEAR_CANDS,
+    fields: MONITORING_FIELDS,
+    idCols: MON_ID_COLS
+  });
+
+  // Build enriched rows by iterating the ORIGINAL array (preserves 1:1 row count)
+  const enriched = projects.map((prow) => {
+    const projKey = resolveJoinValue(prow, JOIN_KEY_PROJECTS); // ← robust
+    let out = { ...prow };
+
+    if (projKey) {
+      out = applyToProjectRow(out, projKey, tripsAcc.values, tripsAcc.counts, TRIP_FIELDS, "trip");
+      out = applyToProjectRow(out, projKey,  monAcc.values,  monAcc.counts,  MONITORING_FIELDS, "monitoring");
+    }
+
+    const nowYear = new Date().getFullYear();
+    out.site_visited_in_past_two_years = hasEventForYear(out, nowYear) || hasEventForYear(out, nowYear - 1);
+    return out;
+  });
+
+  return enriched;
+}
+
+```
+
+Referning both the 'Project Visits' and 'Monitoring Activities' reports, we encoded data with historical site visit information:
+
+
+```js
+const enriched_projects = reconcileProjectsFlatStrict(projects_with_ES_outcomes_yearly, report_insight_trips_w_visits , report_insight_trips_w_monitoring_records);
+display(enriched_projects)
+```
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'enriched_project.csv', 'Download Project Enriched with Site Visit Data');
+})(enriched_projects));
+```
+
+<br/>
+
+Projects monitored in the past 2 years:
+
+```js
+display(enriched_projects.filter(d => d.site_visited_in_past_two_years === true ))
+```
+
+```js
+view(Inputs.table(
+  enriched_projects.filter(d => d.site_visited_in_past_two_years === true ),
+))
+```
+
+
+
+---
+
+
+**`Significant E&S Incidents Reported`**
+
+This step uses the E&S events log:
+
+```js
+display(report_env_soc_events)
+```
+
+A flag is identified where incidents are reported during a given quarter and fiscal year, and event records are encoded into the enriched portfolio dataset:
+
+```js
+// * Merge incidents into projects (FY starts in October) and emit event records.
+// * - incidents: array of rows from "ODP Project Incidents Tracker.xlsx"
+// * - projects: array of rows from enriched portfolio dataset (CSV/JSON)
+// * - opts: { fiscalStartMonth: 10 } (default Oct)
+// *
+// * Returns { updatedProjects, events }
+// */
+// * Output:
+// *   - updatedProjects: the same array, mutated with new flat columns:
+// *       * "Incident Received Q1 2025" ... => "true"/"false"
+// *       * "Incident Received 2025" ...    => "true"/"false"
+// *       * For each incident carried over, per quarter, enumerated:
+// *           "<Field> Q1 2025 E1", "<Field> Q1 2025 E2",
+```
+
+```js
+function encodeIncidentsIntoProjectsFlat(incidents, projects, opts = {}) {
+  const fiscalStartMonth = opts.fiscalStartMonth ?? 10; // Oct = 10
+
+  // ---- helpers ----
+  const norm = (v) => (v ?? "").toString().trim().toLowerCase();
+
+  const parseDate = (v) => {
+    if (!v) return null;
+    if (v instanceof Date) return v;
+    if (typeof v === "number") {
+      // Excel serial (1900 system)
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      return new Date(excelEpoch.getTime() + v * 86400000);
+    }
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
+  };
+
+  const fiscalInfo = (date, startMonth = 10) => {
+    const d = date instanceof Date ? date : parseDate(date);
+    if (!d) return null;
+    const m = d.getUTCMonth() + 1; // 1..12
+    const y = d.getUTCFullYear();
+    const fy = m >= startMonth ? y + 1 : y;
+    const shifted = ((m - startMonth + 12) % 12); // 0..11
+    const q = Math.floor(shifted / 3) + 1;        // 1..4
+    return { fy, q, label: `Q${q} ${fy}` };
+  };
+
+  // base keys and join fields
+  const PN = "Project Number";
+  const PN_ALT = "ProjectNumber";
+  const PNAME = "Project Name";
+  const PNAME_ALT = "ProjectName";
+
+  // The *only* incident fields to carry over (we’ll suffix with ` ${quarterLabel} E#`)
+  const carryFields = [
+    "Date Received",
+    "Incident Date",
+    "Q1 2024", // keep literal if this exists in your source; otherwise remove
+    "Type of Incident",
+    "Significant Incident?",
+    "Incident Description",
+    "Non-fatal injuries",
+    "Fatalities",
+    "Total casualties",
+    "Related to lack of adherence of DFC contractual commitments?",
+    "Files Link",
+    "Root Cause Analysis Received?",
+    "Root Cause Due Date",
+    "Monitoring Officer 1",
+    "Monitoring Officer 2",
+  ].filter(Boolean);
+
+  // ---- build join lookups ----
+  const byPN = new Map();
+  const byName = new Map();
+  for (const p of projects) {
+    const pn = p[PN] ?? p[PN_ALT];
+    const nm = p[PNAME] ?? p[PNAME_ALT];
+    if (pn) byPN.set(norm(pn), p);
+    if (nm) byName.set(norm(nm), p);
+  }
+
+  // Track enumeration per project per quarter: E1, E2, ...
+  // Using WeakMap so we don't add any helper properties onto the rows.
+  const enumCounter = new WeakMap(); // projectRow -> Map(quarterLabel -> count)
+  const getNextEnum = (project, quarterLabel) => {
+    if (!enumCounter.has(project)) enumCounter.set(project, new Map());
+    const m = enumCounter.get(project);
+    const n = (m.get(quarterLabel) ?? 0) + 1;
+    m.set(quarterLabel, n);
+    return n; // 1-based
+  };
+
+  // Track which flags exist globally, so we can backfill missing ones as "false"
+  const allQuarterFlags = new Set(); // e.g., "Incident Received Q1 2025"
+  const allYearFlags = new Set();    // e.g., "Incident Received 2025"
+
+  // ---- ingest incidents ----
+  for (const row of incidents) {
+    // classify by the ODP tracker "Date Received"
+    const dateReceived = parseDate(row["Date Received"]);
+    const fi = fiscalInfo(dateReceived, fiscalStartMonth);
+    if (!fi) continue;
+    const quarterLabel = fi.label;       // "Q1 2025"
+    const yearLabel = String(fi.fy);     // "2025"
+
+    // find the project
+    const pnVal = row[PN] ?? row[PN_ALT];
+    const nmVal = row[PNAME] ?? row[PNAME_ALT];
+    let project =
+      (pnVal && byPN.get(norm(pnVal))) ||
+      (nmVal && byName.get(norm(nmVal)));
+
+    if (!project) {
+      // Create a placeholder project if we can’t match — comment out if undesired.
+      project = { [PN]: pnVal ?? "", [PNAME]: nmVal ?? "" };
+      projects.push(project);
+      if (pnVal) byPN.set(norm(pnVal), project);
+      if (nmVal) byName.set(norm(nmVal), project);
+    }
+
+    // set flags
+    const qFlag = `Incident Received ${quarterLabel}`;
+    const yFlag = `Incident Received ${yearLabel}`;
+    project[qFlag] = "true";
+    project[yFlag] = "true";
+    allQuarterFlags.add(qFlag);
+    allYearFlags.add(yFlag);
+
+    // enumerate this incident for this project's quarter
+    const eNum = getNextEnum(project, quarterLabel); // 1,2,3...
+    const eTag = `E${eNum}`;
+
+    // copy selected fields with suffix " <Quarter> <E#>"
+    for (const base of carryFields) {
+      const key = `${base} ${quarterLabel} ${eTag}`;
+      project[key] = row[base] ?? "";
+    }
+
+    // Always also copy the anchor "Date Received" in its quartered form (if not already in carryFields)
+    if (!carryFields.includes("Date Received")) {
+      const k = `Date Received ${quarterLabel} ${eTag}`;
+      project[k] = dateReceived ? dateReceived.toISOString().slice(0, 10) : "";
+    }
+  }
+
+  // ---- backfill missing flags as "false" so table is rectangular ----
+  if (allQuarterFlags.size || allYearFlags.size) {
+    for (const p of projects) {
+      for (const f of allQuarterFlags) if (p[f] == null) p[f] = "false";
+      for (const f of allYearFlags)   if (p[f] == null) p[f] = "false";
+    }
+  }
+
+  return projects;
+}
+```
+
+```js
+const enriched_projects_with_incidents = encodeIncidentsIntoProjectsFlat(report_env_soc_events, enriched_projects, { fiscalStartMonth: 10 });
+display(enriched_projects_with_incidents)
+```
+
+
+```js
+/* ---------------------------
+   Example usage (Observable):
+------------------------------
+import { mergeIncidentsIntoProjects } from "./merge-incidents.js";
+
+const incidents = await d3.csv("ODP Project Incidents Tracker.csv"); // or xlsx -> array of objects
+const projects  = await d3.csv("enriched_project.csv");
+
+const { updatedProjects, events } =
+  mergeIncidentsIntoProjects(incidents, projects, { fiscalStartMonth: 10 });
+
+// Write back or inspect:
+view(Inputs.table(updatedProjects));
+view(Inputs.table(events));
+*/
+```
+
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'enriched_projects_with_incidents_annotated.csv', 'Download Projects Annotated for Events');
+})(enriched_projects_with_incidents))
+```
+
+---
+
+
+Where values are not pre-computed:
+
+<br/>
+
+**`Manually-Defined Risk Modifiers`**
+
+This step incorporates per-project risk modifiers supplied by analysts:
+
+```js
+display(report_analyst_risk_modifiers)
+```
+
+Summary risk modifiers are encoded back into the portfolio dataset:
+
+```js
+const applyAnalystRiskModifiers = (() => {
+  if (!Array.isArray(report_analyst_risk_modifiers)) {
+    console.warn("report_analyst_risk_modifiers is not an array; nothing to do.");
+    return enriched_projects_with_incidents;
+  }
+  if (!Array.isArray(enriched_projects_with_incidents)) {
+    console.warn("enriched_projects_with_incidents is not an array; nothing to do.");
+    return [];
+  }
+
+  const analystRows = report_analyst_risk_modifiers;
+  const projects = enriched_projects_with_incidents;
+
+  const PNAME = "Project Name";
+  const PNAME_ALT = "ProjectName";
+
+  const fieldsYesNo = [
+    "Multiple Lenders",
+    "Adequate IESC Supervision",
+    "Close Proximity to Other Projects",
+    "Strategic Interest",
+    "Significant Community Risk",
+    "Significant Labor Risk",
+    "Significant Environmental Risk",
+  ];
+
+  const fieldsFreeText = ["Operational Phase"];
+  const fieldsNumeric = ["Analyst Adjustment"];
+
+  const norm = (v) => (v ?? "").toString().trim().toLowerCase();
+
+  const yn = (v) => {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "boolean") return v ? "yes" : "no";
+    const s = v.toString().trim().toLowerCase();
+    if (["yes", "y", "true", "t", "1"].includes(s)) return "yes";
+    if (["no", "n", "false", "f", "0"].includes(s)) return "no";
+    return s;
+  };
+
+  const num = (v) => {
+    if (v === null || v === undefined || v === "") return "";
+    const n = Number(v);
+    return Number.isFinite(n) ? n : v;
+  };
+
+  // Build lookup
+  const byName = new Map();
+  for (const p of projects) {
+    const nm = p[PNAME] ?? p[PNAME_ALT];
+    if (!nm) continue;
+    const key = norm(nm);
+    if (!byName.has(key)) byName.set(key, []);
+    byName.get(key).push(p);
+  }
+
+  // Apply analyst modifiers
+  for (const a of analystRows) {
+    const aName = a[PNAME] ?? a[PNAME_ALT];
+    if (!aName) continue;
+    const targets = byName.get(norm(aName));
+    if (!targets) continue;
+
+    for (const proj of targets) {
+      for (const f of fieldsYesNo) if (f in a) proj[f] = yn(a[f]);
+      for (const f of fieldsFreeText) if (f in a) proj[f] = a[f] ?? "";
+      for (const f of fieldsNumeric) if (f in a) proj[f] = num(a[f]);
+    }
+  }
+
+  console.info("Analyst risk modifiers applied.");
+  return projects; // return updated dataset
+})();
+
+```
+
+```js
+display(applyAnalystRiskModifiers)
+```
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'enriched_projects_with_incidents_and_analyst_modifiers.csv', 'Download Projects with Analyst Modifiers');
+})(applyAnalystRiskModifiers))
+```
+
+<!--- --->
+<br/>
+
+
+**Step 5 Outputs :** **Portfolio with Flag-Adjusted ESG risk scores** 
+
+This final step encodes the calculated risk accelerants and mitigants:
+
+```js
+// Weights per your updated table
+// Weights
+const W = {
+  monitoredLast2Y: 20,               // subtract 20 if yes
+  multipleLenders: 2,                // subtract 2 if yes
+  clientReporting: 2,                // subtract 2 if yes (only if present)
+  iescReporting: 2,                  // subtract 2 if yes (only if present)
+  adequateIESCSupervision: 5,        // subtract 5 if yes
+  redFlag_008: 5,                    // +5 if adverse_impact_2023 is true
+  significantESIncident: 10,         // +10 if any Incident Received Q* 2025 is true
+  closeProximity: 3,                 // +3 if yes
+  preConstructionPhase: 2,           // +2 if Operational Phase = pre-construction
+  constructionPhase: 1,              // +1 if Operational Phase = construction
+  significantCommunityRisk: 10,      // +10 if yes
+  significantLaborRisk: 2,           // +2 if yes
+  significantEnvironmentalRisk: 2,   // +2 if yes
+  strategicInterest: 1,              // +1 if yes
+  analystAdjustment: 5               // clamp ±5
+};
+
+// 'yes' = yes/true/1 or any positive number
+const yes = (v) => {
+  if (v === undefined || v === null) return false;
+  const s = String(v).trim().toLowerCase();
+  if (s === "yes" || s === "true" || s === "1") return true;
+  const n = Number(s.replace(/,/g, ""));
+  return Number.isFinite(n) && n > 0;
+};
+
+// Match "Incident Received Q1..Q4 2025" (+ optional " E#")
+function findIncidentReceived2025Columns(keys) {
+  const re = /^Incident Received\s+Q[1-4]\s+2025(?:\s+E\d+)?$/i;
+  return keys.filter(k => re.test(k));
+}
+
+/**
+ * Only uses the fields you specified:
+ *  - adverse_impact_2023
+ *  - site_visited_in_past_two_years
+ *  - Incident Received Q* 2025 (any quarter)
+ *  - Multiple Lenders, Adequate IESC Supervision, Close Proximity to Other Projects,
+ *    Strategic Interest, Significant Community Risk, Significant Labor Risk,
+ *    Significant Environmental Risk, Operational Phase, Analyst Adjustment
+ */
+function calculateContextScore(rows) {
+  if (!Array.isArray(rows)) return [];
+
+  const keys = rows.length ? Object.keys(rows[0]) : [];
+  const incidentCols2025 = findIncidentReceived2025Columns(keys);
+  const hasClientReporting = keys.includes("Client Reporting");
+  const hasIESCReporting   = keys.includes("IESC Reporting");
+
+  return rows.map(row => {
+    let score = 0;
+    const ctx = {};
+
+    // --- Mitigants (subtract) ---
+    if ("site_visited_in_past_two_years" in row && yes(row["site_visited_in_past_two_years"])) {
+      score -= W.monitoredLast2Y;
+      ctx.site_visited_in_past_two_years = `−${W.monitoredLast2Y}`;
+    }
+
+    if ("Multiple Lenders" in row && yes(row["Multiple Lenders"])) {
+      score -= W.multipleLenders;
+      ctx.multipleLenders = `−${W.multipleLenders}`;
+    }
+
+    if (hasClientReporting && yes(row["Client Reporting"])) {
+      score -= W.clientReporting;
+      ctx.clientReporting = `−${W.clientReporting}`;
+    }
+
+    if (hasIESCReporting && yes(row["IESC Reporting"])) {
+      score -= W.iescReporting;
+      ctx.iescReporting = `−${W.iescReporting}`;
+    }
+
+    if ("Adequate IESC Supervision" in row && yes(row["Adequate IESC Supervision"])) {
+      score -= W.adequateIESCSupervision;
+      ctx.adequateIESCSupervision = `−${W.adequateIESCSupervision}`;
+    }
+
+    // --- 008 adverse impact (+5) ---
+    if ("adverse_impact_2023" in row && yes(row["adverse_impact_2023"])) {
+      score += W.redFlag_008;
+      ctx.redFlag_008 = `+${W.redFlag_008}`;
+    }
+
+    // --- Significant incidents (+10) via "Incident Received Q* 2025" ---
+    if (incidentCols2025.length && incidentCols2025.some(c => yes(row[c]))) {
+      score += W.significantESIncident;
+      ctx.significantESIncident = `+${W.significantESIncident}`;
+    }
+
+    // --- Other risk flags (+) ---
+    if ("Close Proximity to Other Projects" in row && yes(row["Close Proximity to Other Projects"])) {
+      score += W.closeProximity;
+      ctx.closeProximity = `+${W.closeProximity}`;
+    }
+    if ("Strategic Interest" in row && yes(row["Strategic Interest"])) {
+      score += W.strategicInterest;
+      ctx.strategicInterest = `+${W.strategicInterest}`;
+    }
+    if ("Significant Community Risk" in row && yes(row["Significant Community Risk"])) {
+      score += W.significantCommunityRisk;
+      ctx.significantCommunityRisk = `+${W.significantCommunityRisk}`;
+    }
+    if ("Significant Labor Risk" in row && yes(row["Significant Labor Risk"])) {
+      score += W.significantLaborRisk;
+      ctx.significantLaborRisk = `+${W.significantLaborRisk}`;
+    }
+    if ("Significant Environmental Risk" in row && yes(row["Significant Environmental Risk"])) {
+      score += W.significantEnvironmentalRisk;
+      ctx.significantEnvironmentalRisk = `+${W.significantEnvironmentalRisk}`;
+    }
+
+    // --- Operational Phase (no double-counting) ---
+    if ("Operational Phase" in row && row["Operational Phase"] != null) {
+      const s = String(row["Operational Phase"]).toLowerCase();
+      if (s.includes("pre-construct")) {
+        score += W.preConstructionPhase;
+        ctx.operationalPhase = `pre-construction (+${W.preConstructionPhase})`;
+      } else if (s.includes("construct")) {
+        score += W.constructionPhase;
+        ctx.operationalPhase = `construction (+${W.constructionPhase})`;
+      }
+    }
+
+    // --- Analyst Adjustment (clamp ±5) ---
+    if ("Analyst Adjustment" in row && String(row["Analyst Adjustment"]).trim() !== "") {
+      const n = Number(row["Analyst Adjustment"]);
+      if (Number.isFinite(n)) {
+        const clamped = Math.max(-W.analystAdjustment, Math.min(W.analystAdjustment, n));
+        score += clamped;
+        ctx.analystAdjustment = `${n} (clamped to ${clamped >= 0 ? "+" : ""}${clamped})`;
+      }
+    }
+
+    return { ...row, context_score: score, _ctx: ctx };
+  });
+}
+
+```
+
+```js
+const written_context_value = calculateContextScore(applyAnalystRiskModifiers)
+display(written_context_value)
+```
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'full_ES_factors_and_context.csv', 'Download Projects with Context and Factor');
+})(written_context_value))
+```
+
+
+<!--
+```js
+const ESRScontext = calculateContextScore_example(ESRS_adjusted_for_CRI_and_SRI);
+//display(ESRScontext[0]["context_score"])
+```
+-->
+
+<!--
+```js
+function calculateContextScore_example(data) {
+  return data.map(d => {
+    const offsets = [
+//      red_flag_008,
+//      monitored_last_2_years,
+//      multiple_lenders,
+//      iesc_reporting
+    ];
+
+    const definedNumericValues = offsets.filter(v => typeof v === "number");
+    const allNA = offsets.every(v => v === "n/a");
+
+    const context_score = allNA
+      ? "n/a"
+      : definedNumericValues.length > 0
+        ? definedNumericValues.reduce((sum, v) => sum + v, 0)
+        : undefined;
+
+    return {
+      ...d,
+      context_score
+    };
+  });
+}
+```
+-->
+
+
+```js
+//function calculateContextScore(data) {
+//  return data.map(d => {
+//    const offsets = [
+//      red_flag_008,
+//      monitored_last_2_years,
+//      multiple_lenders,
+//      iesc_reporting
+//    ];
+
+//    const definedNumericValues = offsets.filter(v => typeof v === "number");
+//    const allNA = offsets.every(v => v === "n/a");
+
+//    const context_score = allNA
+//      ? "n/a"
+//      : definedNumericValues.length > 0
+//        ? definedNumericValues.reduce((sum, v) => sum + v, 0)
+//        : undefined;
+
+//    return {
+//      ...d,
+//      context_score
+//    };
+//  });
+//}
+```
+
+
 
 <br/>
 
@@ -3439,6 +5265,10 @@ function flattenVisitsByFY(projects, trips, opts = {}) {
 
 ## Step 6: Final Risk Score
 
+
+<!--
+DIFFERENTIATE BY ANNUAL VALUES
+-->
 <br/>
 
 Calculating the final risk score involves first summing a project's country-adjusted ESRS and contextual risk score.
@@ -3446,49 +5276,125 @@ Calculating the final risk score involves first summing a project's country-adju
 ${tex`ESRS_{\text{countryAdjusted} {(i)}} + O_{\text{context} {(i)}}`}
 
 <br/>
-Additional bounding parameters are applied too maintain a range of [0,100]:
+Additional bounding parameters are applied to maintain a range of [0,100]:
 
 ${tex`\text{ESRS}_{\text{factored} {(i)}} = \min\left(\max\left(ESRS_{\text{countryAdjusted} {(i)}} + O_{\text{context} {(i)}},\ 0\right),\ 100\right)`}
 
 
 
 ---
-**<mark>Step 6 Output</mark>** 
+**Step 6 Output** 
   
 
-
 ```js
-const ESRSfactored = factorContextValue(ESRScontext);
-display(ESRSfactored[0]["finalScore"])
-```
+function applyFinalFactoredScore(rows) {
+  if (!Array.isArray(rows)) return [];
 
-```js echo
-function factorContextValue(data) {
-  return data.map(d => {
-    const N = d["ESRS Country Adjusted"];
-    const context_score = d.context_score;
+  return rows.map(row => {
+    const base = Number(row.ESRS_adjustment_calculated);
+    const context = Number(row.context_score);
 
-    let finalScore;
-
-    if (typeof N === "number" && typeof context_score === "number") {
-      const combined = N + context_score;
-      finalScore = Math.max(0, Math.min(100, combined));
-    } else {
-      finalScore = N; // fallback to unmodified value
+    let finalScore = null;
+    if (Number.isFinite(base) && Number.isFinite(context)) {
+      finalScore = base + context;
+    } else if (Number.isFinite(base)) {
+      finalScore = base; // if only base is valid
+    } else if (Number.isFinite(context)) {
+      finalScore = context; // if only context is valid
     }
 
     return {
-      ...d,
-      finalScore
+      ...row,
+      final_project_factored_risk_score: finalScore
     };
   });
 }
+
 ```
+
+```js
+const final = applyFinalFactoredScore(written_context_value);
+display(final)
+```
+
+
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'ES_factors_and_context_with_final_score.csv', 'Download Projects with Final Score');
+})(final))
+```
+
+
+----------------
+
+```js
+//const ESRSfactored = factorContextValue(ESRScontext);
+//const ESRSfactored = factorContextValue(enriched_projects);
+
+//display(ESRSfactored);
+//display(ESRSfactored[0]["finalScore"])
+```
+
+```js
+//function factorContextValue(data) {
+//  return data.map(d => {
+//    const N = d["ESRS Country Adjusted"];
+//    const context_score = d.context_score;
+//
+//    let finalScore;
+//
+//    if (typeof N === "number" && typeof context_score === "number") {
+//      const combined = N + context_score;
+//      finalScore = Math.max(0, Math.min(100, combined));
+//    } else {
+//      finalScore = N; // fallback to unmodified value
+//    }
+//
+//    return {
+//      ...d,
+//      finalScore
+//    };
+//  });
+//};
+
+//function factorContextValue(data) {
+//  return data.map(d => {
+//    const N = d["ESRS_adjustment_calculated"];
+//    const context_score = d.context_score;
+
+//    let finalScore;
+
+//    if (typeof N === "number" && typeof context_score === "number") {
+//      const combined = N + context_score;
+//      finalScore = Math.max(0, Math.min(100, combined));
+//    } else {
+//      finalScore = N; // fallback to unmodified value
+//    }
+
+//    return {
+//      ...d,
+//      finalScore
+//    };
+//  });
+//}
+```
+
+
+
+
+
 
 ---
 
 
 ## Portfolio Segmentation
+
+```js
+const ESRSfactored = final
+```
 
 
 Projects are segmented into three monitoring priority tiers based on final scores:
@@ -3497,15 +5403,30 @@ Projects are segmented into three monitoring priority tiers based on final score
 
 |Tier|Range|
 | --- | --- |
-|Site Monitoring|Top 24 projects|
-|Desk Monitoring|Next 24 projects|
+|Site Monitoring|Top ${top} projects|
+|Special Consideration|Next ${mid} projects|
 |No Monitoring|Remaining projects|
+
+
+
+```js
+//display(segmentedPortfolio)
+//display(segmentedPortfolio[0]["monitoringTier"])
+display(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring"));
+display(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for special consideration"));
+display(segmentedPortfolio.filter(d => d.monitoringTier === "standard monitoring"));
+```
+
 
 ---
 
 <br/>
 
 ### Site Monitoring
+
+```js
+const top = view(Inputs.range([12,48], {value: 36, step: 1}))
+```
 
 ```js
 Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring"))
@@ -3520,10 +5441,14 @@ display((data => {
 ```
 <br/>
 
-### Desk Monitoring / Special Consideration 
+### Special Consideration 
 
 ```js
-Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for enhanced desk monitoring"))
+const mid = view(Inputs.range([12,48], {value: 36, step: 1}))
+```
+
+```js
+Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for special consideration"))
 ```
 
 
@@ -3531,7 +5456,7 @@ Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "recommended fo
 display((data => {
   const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
   return download(blob, 'active_projects_ESG_risk_top_segment.csv', 'Download Middle Segment for Desk Monitoring');
-})(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for enhanced desk monitoring")));
+})(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for special consideration")));
 ```
 
 <br/>
@@ -3543,44 +5468,86 @@ Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "standard monit
 ```
 
 
-```js echo
-display(segmentedPortfolio)
-display(segmentedPortfolio[0]["monitoringTier"])
-display(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring"));
-display(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for enhanced desk monitoring"));
-display(segmentedPortfolio.filter(d => d.monitoringTier === "standard monitoring"));
-```
-
 ```js
 const segmentedPortfolio = segmentPortfolio(ESRSfactored);
 ```
 
-```js echo
-function segmentPortfolio(data) {
-  // Make a shallow copy to avoid mutating original array
-  const sorted = [...data]
-    .filter(d => typeof d.finalScore === "number")
-    .sort((a, b) => b.finalScore - a.finalScore); // descending order
 
-  // Assign tiers by index
-  return data.map(d => {
-    const index = sorted.findIndex(x => x === d);
+
+```js
+//Segment portfolio by the new score (defaults to 'final_project_factored_risk_score')
+//    Top 24 -> priority for site monitoring
+//    Next 24 -> recommended for special consideration
+//    Rest -> standard monitoring
+function segmentPortfolio(data,
+  { topSize = top, midSize = mid, scoreKey = "final_project_factored_risk_score" } = {}
+) {
+  if (!Array.isArray(data)) return [];
+
+  const num = v => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+  // Collect [index, score] for rows that have a numeric score (fallback to legacy finalScore)
+  const scored = [];
+  for (let i = 0; i < data.length; i++) {
+    const v = num(data[i][scoreKey]);
+    const s = v ?? num(data[i].finalScore);
+    if (s !== null) scored.push([i, s]);
+  }
+
+  // Sort descending by score; tie-break on original index for stability
+  scored.sort((a, b) => (b[1] - a[1]) || (a[0] - b[0]));
+
+  // Determine cut positions (sizes, not cumulative in the inputs)
+  const topN = Math.max(0, Math.floor(topSize));
+  const midN = Math.max(0, Math.floor(midSize));
+  const topCut = Math.min(topN, scored.length);
+  const midCut = Math.min(topN + midN, scored.length); // cumulative boundary for second tier
+
+  // Build rank map: index -> rank among scored
+  const rank = new Map(scored.map(([i], pos) => [i, pos]));
+
+  return data.map((row, i) => {
+    const r = rank.has(i) ? rank.get(i) : Infinity; // unscored → Infinity => "standard monitoring"
     let monitoringTier;
-
-    if (index >= 0 && index < 24) {
+    if (r < topCut) {
       monitoringTier = "priority for site monitoring";
-    } else if (index >= 24 && index < 48) {
-      monitoringTier = "recommended for enhanced desk monitoring";
+    } else if (r < midCut) {
+      monitoringTier = "recommended for special consideration";
     } else {
       monitoringTier = "standard monitoring";
     }
-
-    return {
-      ...d,
-      monitoringTier
-    };
+    return { ...row, monitoringTier };
   });
 }
+```
+
+
+```js
+//function segmentPortfolio(data) {
+  // Make a shallow copy to avoid mutating original array
+//  const sorted = [...data]
+//    .filter(d => typeof d.finalScore === "number")
+//    .sort((a, b) => b.finalScore - a.finalScore); // descending order
+
+  // Assign tiers by index
+//  return data.map(d => {
+//    const index = sorted.findIndex(x => x === d);
+//    let monitoringTier;
+
+//    if (index >= 0 && index < 24) {
+//      monitoringTier = "priority for site monitoring";
+//    } else if (index >= 24 && index < 48) {
+//      monitoringTier = "recommended for special consideration";
+//    } else {
+//      monitoringTier = "standard monitoring";
+//    }
+
+//    return {
+//      ...d,
+//      monitoringTier
+//    };
+//  });
+//}
 ```
 
 
