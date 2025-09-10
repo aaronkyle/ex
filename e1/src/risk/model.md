@@ -16,7 +16,7 @@ const local_file_insight_active_projects = view(Inputs.file({label: "Project Por
 // IndexedDB Setup
 const dbName_insight_active_projects  = "insight_active_projects";
 const dbVersion_insight_active_projects  = 1;
-const storeName_insight_active_projects  = "insight_all";
+const storeName_insight_active_projects  = "insight_active";
 ```
 
 ```js
