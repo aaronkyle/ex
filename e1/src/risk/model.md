@@ -3245,24 +3245,102 @@ display((data => {
 <br/>
 Projects can be annotated with additional contextual risk data to dynamically modify factored scores based on up-to-date intelligence.  Available contextual modifiers and values are:
 
+
+```js
+// Monitored in Last 2 Years
+const monitoredLast2Yi_view = Inputs.number({value: -20});
+const monitoredLast2Yi = Generators.input(monitoredLast2Yi_view);
+
+// Multiple Lenders
+const multipleLendersi_view = Inputs.number({value: -2});
+const multipleLendersi = Generators.input(multipleLendersi_view);
+
+// Client Reporting
+const clientReportingi_view = Inputs.number({value: -2});
+const clientReportingi = Generators.input(clientReportingi_view);
+
+// IESC Reporting
+const iescReportingi_view = Inputs.number({value: -2});
+const iescReportingi = Generators.input(iescReportingi_view);
+
+// Adequate IESC Supervision
+const adequateIESCSupervisioni_view = Inputs.number({value: -5});
+const adequateIESCSupervisioni = Generators.input(adequateIESCSupervisioni_view);
+
+// 008 Flag
+const redFlagi1_view = Inputs.number({value: 5});
+const redFlagi1 = Generators.input(redFlagi1_view);
+
+// Significant E&S Incident
+const redFlagi2_view = Inputs.number({value: 5});
+const redFlagi2 = Generators.input(redFlagi2_view);
+
+// Close Proximity to Other Projects
+const closeProximityi_view = Inputs.number({value: 3});
+const closeProximityi = Generators.input(closeProximityi_view);
+
+// Pre-Construction Phase
+const constructionPhasei1_view = Inputs.number({value: 2});
+const constructionPhasei1 = Generators.input(constructionPhasei1_view);
+
+// Construction Phase
+const constructionPhasei2_view = Inputs.number({value: 1});
+const constructionPhasei2 = Generators.input(constructionPhasei2_view);
+
+// Significant Community Risk
+const significantCommunityRiski_view = Inputs.number({value: 10});
+const significantCommunityRiski = Generators.input(significantCommunityRiski_view);
+
+// Significant Labor Risk
+const significantLaborRiski_view = Inputs.number({value: 2});
+const significantLaborRiski = Generators.input(significantLaborRiski_view);
+
+// Significant Environmental Risk
+const significantEnvironmentalRiski_view = Inputs.number({value: 2});
+const significantEnvironmentalRiski = Generators.input(significantEnvironmentalRiski_view);
+
+// Strategic Interest
+const strategicInteresti_view = Inputs.number({value: 1});
+const strategicInteresti = Generators.input(strategicInteresti_view);
+
+// Analyst Adjustment (±5)
+const analystAdjustmenti_view = Inputs.number({value: 0, min: -5, max: 5});
+const analystAdjustmenti = Generators.input(analystAdjustmenti_view);
+
+```
+
 | Modifier                        | Variable Name                                | Value   |
 |---------------------------------|----------------------------------------------|---------|
-| Monitored in Last 2 Years       | ${tex`\text{monitoredLast2Y}_i`}             | -20      |
-| Multiple Lenders                | ${tex`\text{multipleLenders}_i`}             | -2      |
-| Client Reporting                  | ${tex`\text{clientReporting}_i`}               | -2      |
-| IESC Reporting                  | ${tex`\text{iescReporting}_i`}               | -2      |
-| Adequate IESC Supervision       | ${tex`\text{adequateIESCSupervision}_i`}               | -5      |
-| 008 Flag                    | ${tex`\text{redFlag}_i`}                      | +5   |
-| Significant E&S Incident       | ${tex`\text{redFlag}_i`}                      | +5   |
-| Close Proximity to Other Projects | ${tex`\text{closeProximity}_i`}              | +3      |
-| Pre-Construction Phase          | ${tex`\text{constructionPhase}_i`}           | +2      |
-| Construction Phase              | ${tex`\text{constructionPhase}_i`}           | +1      |
-| Significant Community Risk      | ${tex`\text{significantCommunityRisk}_i`}    | +10     |
-| Significant Labor Risk          | ${tex`\text{significantLaborRisk}_i`}        | +2      |
-| Significant Environmental Risk  | ${tex`\text{significantEnvironmentalRisk}_i`}        | +2      |
-| Strategic Interest              | ${tex`\text{strategicInterest}_i`}           | +1      |
-| Analyst Adjustment              | ${tex`\text{analystAdjustment}_i`}           | ±5      |
+| Monitored in Last 2 Years       | ${tex`\text{monitoredLast2Y}_i`}             | ${display(Inputs.bind(Inputs.number({value: -20, width: 14}), monitoredLast2Yi_view))}      |
+| Multiple Lenders                | ${tex`\text{multipleLenders}_i`}             | ${display(Inputs.bind(Inputs.number({value: -2, width: 14}), multipleLendersi_view))}      |
+| Client Reporting                  | ${tex`\text{clientReporting}_i`}               | ${display(Inputs.bind(Inputs.number({value: -2, width: 14}), clientReportingi_view))}      |
+| IESC Reporting                  | ${tex`\text{iescReporting}_i`}               | ${display(Inputs.bind(Inputs.number({value: -2, width: 14}), iescReportingi_view))}     |
+| Adequate IESC Supervision       | ${tex`\text{adequateIESCSupervision}_i`}               | ${display(Inputs.bind(Inputs.number({value: -5, width: 14}), adequateIESCSupervisioni_view))}      |
+| 008 Flag                    | ${tex`\text{redFlag}_i`}                      | ${display(Inputs.bind(Inputs.number({value: 5, width: 14}), redFlagi1_view))}   |
+| Significant E&S Incident       | ${tex`\text{redFlag}_i`}                      | ${display(Inputs.bind(Inputs.number({value: 5, width: 14}), redFlagi2_view))}   |
+| Close Proximity to Other Projects | ${tex`\text{closeProximity}_i`}              | ${display(Inputs.bind(Inputs.number({value: 3, width: 14}), closeProximityi_view))}      |
+| Pre-Construction Phase          | ${tex`\text{constructionPhase}_i`}           | ${display(Inputs.bind(Inputs.number({value: 2, width: 14}), constructionPhasei1_view))}      |
+| Construction Phase              | ${tex`\text{constructionPhase}_i`}           | ${display(Inputs.bind(Inputs.number({value: 1, width: 14}), constructionPhasei2_view))}      |
+| Significant Community Risk      | ${tex`\text{significantCommunityRisk}_i`}    | ${display(Inputs.bind(Inputs.number({value: 10, width: 14}), significantCommunityRiski_view))}     |
+| Significant Labor Risk          | ${tex`\text{significantLaborRisk}_i`}        | ${display(Inputs.bind(Inputs.number({value: 2, width: 14}), significantLaborRiski_view))}      |
+| Significant Environmental Risk  | ${tex`\text{significantEnvironmentalRisk}_i`}        | ${display(Inputs.bind(Inputs.number({value: 2, width: 14}), significantEnvironmentalRiski_view))}      |
+| Strategic Interest              | ${tex`\text{strategicInterest}_i`}           | ${display(Inputs.bind(Inputs.number({value: 1, width: 14}), strategicInteresti_view))}      |
+| Analyst Adjustment              | ${tex`\text{analystAdjustment}_i`}           | ${display(Inputs.bind(Inputs.number({value: 0, width: 14}), analystAdjustmenti_view))}      |
 
+
+```js
+//view(
+//  Inputs.table(
+//    ESRSfactored.filter(d => d["Project Name"] === "Compagnie des Bauxites de Guinee"),
+//    {
+//      columns: [
+//        "Project Name",
+//        "site_visited_in_past_two_years",
+//        "final_project_factored_risk_score"]
+//    }
+//  )
+//)
+```
 
 <!--
 Within first 3 years of disbursement and never monitored = +10
@@ -3274,24 +3352,26 @@ A project's contextual risk value is calculated as the sum of all applicable mod
 ```tex
 \begin{aligned}
 \mathrm{context}_i
-&+ \;\mathrm{monitoredLast2Y}_i \quad {\scriptsize(\in [-20])} \\
-&+ \;\mathrm{multipleLenders}_i \quad {\scriptsize(\in [-2])} \\
-&+ \;\mathrm{clientReporting}_i \quad {\scriptsize(\in [-2])} \\
-&+ \;\mathrm{iescReporting}_i \quad {\scriptsize(\in [-2])} \\
-&+ \;\mathrm{adequateIESCSupervision}_i \quad {\scriptsize(\in [-5])} \\
-&+ \;\mathrm{flag008}_i \quad {\scriptsize(\in [+5])} \\
-&+ \;\mathrm{significantIncident}_i \quad {\scriptsize(\in [+5])} \\
-&+ \;\mathrm{closeProximity}_i \quad {\scriptsize(\in [+3])} \\
-&+ \;\mathrm{preConstructionPhase}_i \quad {\scriptsize(\in [+2])} \\
-&+ \;\mathrm{constructionPhase}_i \quad {\scriptsize(\in [+1])} \\
-&+ \;\mathrm{significantCommunityRisk}_i \quad {\scriptsize(\in [+10])} \\
-&+ \;\mathrm{significantLaborRisk}_i \quad {\scriptsize(\in [+2])} \\
-&+ \;\mathrm{significantEnvironmentalRisk}_i \quad {\scriptsize(\in [+2])} \\
-&+ \;\mathrm{strategicInterest}_i \quad {\scriptsize(\in [+1])} \\
-&+ \;\mathrm{analystAdjustment}_i \quad {\scriptsize(\in [-5,5])}
+&+ \;\mathrm{monitoredLast2Y}_i \quad {\scriptsize(\in [${monitoredLast2Yi}])} \\
+&+ \;\mathrm{multipleLenders}_i \quad {\scriptsize(\in [${multipleLendersi}])} \\
+&+ \;\mathrm{clientReporting}_i \quad {\scriptsize(\in [${clientReportingi}])} \\
+&+ \;\mathrm{iescReporting}_i \quad {\scriptsize(\in [${iescReportingi}])} \\
+&+ \;\mathrm{adequateIESCSupervision}_i \quad {\scriptsize(\in [${adequateIESCSupervisioni}])} \\
+&+ \;\mathrm{flag008}_i \quad {\scriptsize(\in [${redFlagi1}])} \\
+&+ \;\mathrm{significantIncident}_i \quad {\scriptsize(\in [${redFlagi2}])} \\
+&+ \;\mathrm{closeProximity}_i \quad {\scriptsize(\in [${closeProximityi}])} \\
+&+ \;\mathrm{preConstructionPhase}_i \quad {\scriptsize(\in [${constructionPhasei1}])} \\
+&+ \;\mathrm{constructionPhase}_i \quad {\scriptsize(\in [${constructionPhasei2}])} \\
+&+ \;\mathrm{significantCommunityRisk}_i \quad {\scriptsize(\in [${significantCommunityRiski}])} \\
+&+ \;\mathrm{significantLaborRisk}_i \quad {\scriptsize(\in [${significantLaborRiski}])} \\
+&+ \;\mathrm{significantEnvironmentalRisk}_i \quad {\scriptsize(\in [${significantEnvironmentalRiski}])} \\
+&+ \;\mathrm{strategicInterest}_i \quad {\scriptsize(\in [${strategicInteresti}])} \\
+&+ \;\mathrm{analystAdjustment}_i \quad {\scriptsize(\in [${analystAdjustmenti}])}
 \end{aligned}
 
 ```
+
+
 
 <br/>
 
@@ -4376,23 +4456,23 @@ const TRIP_FIELDS = [
  // instead of "Project Name"
 const JOIN_KEY_PROJECTS = [
   "Project Number",            // numeric where present
-  "Project Name: Project Number" // DCA where present
+  "Project Name: Project Number", // DCA where present
+  "Project ID",
 ];
 
 // Monitoring/trips files may expose the project number under several label styles
 const JOIN_KEY_MONITORING = [
-  "Project Name: Project Number",
   "Project Number",
-  "Project: Project Number",        // include this as a just-in-case
-  "Project Name: Project ID",   // add ID variants: some reports carry numeric ID instead
+  "Project Name: Project Number",
+  "Project: Project Number",
   "Project ID",
+  "Project Name: Project ID"
 ];
 
 
 const TRIP_DATE_CANDS = [
   "Trip Start Date", "Trip Start Date:", "Start Date", "Start Date:",
-  "Start Date.1", "End Date", "End Date:", "End Date.1", "Trip End Date", "Trip End Date:",
-  "Trip: Created Date", "Trip: Created Date:"
+  "Start Date.1", "End Date", "End Date:", "End Date.1", "Trip End Date", "Trip End Date:", "Trip: Created Date", "Trip: Created Date:"
 ];
 
 const TRIP_FISCAL_YEAR_CANDS = ["Visit Fiscal Year", "Visit Fiscal Year:"];
@@ -4408,7 +4488,8 @@ const MON_DATE_CANDS = [
 const MON_FISCAL_YEAR_CANDS = ["Fiscal Year", "Fiscal Year:"];
 
 
-const MON_ID_COLS  = ["Monitoring Activity: ID:"];
+const MON_ID_COLS = ["Monitoring Activity: ID", "Monitoring Activity: ID:"];
+
 ```
 
 
@@ -4447,15 +4528,38 @@ function firstPresentJoinValue(row, candidates) {
 
 // Backwards-compatible: allow joinKey to be string or array of strings
 function resolveJoinValue(row, joinKey) {
+  const normalize = (v) => {
+    // collapse spaces & NBSP
+    let s = String(v ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+
+    // If the value looks numeric-ish (IDs), normalize to a pure digit string:
+    //  - strips commas, spaces
+    //  - converts scientific notation and trims trailing `.0`
+    //  - keeps non-numeric keys (like "675-2016-239-IG") as-is
+    const looksNumeric = /^[\d\s,.\-+eE]+$/.test(s);
+    if (looksNumeric && /\d/.test(s)) {
+      // Try to parse and re-render without decimals or exponent
+      const n = Number(s.replace(/[, ]+/g, ""));
+      if (Number.isFinite(n)) return String(Math.trunc(n));
+      // Fallback: just strip everything that's not a digit
+      const digits = s.replace(/\D+/g, "");
+      if (digits) return digits.replace(/^0+/, "") || "0";
+    }
+    return s; // non-numeric ID formats (e.g., "675-2016-239-IG") pass through unchanged
+  };
+
   const cands = Array.isArray(joinKey) ? joinKey : [joinKey];
   for (const c of cands) {
-    for (const v of keyVariants(c)) {
-      if (v in row && row[v] != null && String(row[v]).trim() !== "")
-        return String(row[v]).replace(/\s+/g, " ").trim(); // normalize
+    for (const v of (c.endsWith(":") ? [c, c.slice(0, -1)] : [c, `${c}:`])) {
+      if (v in row && row[v] != null && String(row[v]).trim() !== "") {
+        return normalize(row[v]);
+      }
     }
   }
   return null;
 }
+
+
 
 // Find the first present key from candidates; also try with/without trailing colon.
 function firstPresentValue(row, candidates) {
@@ -4476,15 +4580,12 @@ function firstPresentValue(row, candidates) {
 function parseYearSmart(v) {
   if (v == null) return null;
   const s = String(v).trim();
-  // numeric year
   const yNum = Number(s);
   if (Number.isFinite(yNum) && yNum >= 1990 && yNum <= 2100 && /^\d{4}$/.test(s)) return yNum;
 
-  // 4-digit substring in text
   const m = s.match(/\b(19\d{2}|20\d{2}|2100)\b/);
   if (m) return Number(m[1]);
 
-  // date parse
   const d = new Date(s);
   if (!Number.isNaN(d.getTime())) {
     const y = d.getFullYear();
@@ -4492,7 +4593,6 @@ function parseYearSmart(v) {
   }
   return null;
 }
-
 
 function pickEventYear(row, dateCandidates, fiscalYearCandidates) {
   const dateVal = firstPresentValue(row, dateCandidates);
@@ -4503,18 +4603,9 @@ function pickEventYear(row, dateCandidates, fiscalYearCandidates) {
   return y2;
 }
 
-
-
-function pickDate(obj, candidates) {
-  for (const c of candidates) if (c in obj && obj[c]) return obj[c];
-  return null;
-}
-
-
 function firstPresentKey(obj, keys) {
   return keys.find((k) => k in obj && obj[k] != null && String(obj[k]).trim() !== "");
 }
-
 
 function dedupeById(rows, idColumns, joinKeyCandidates = null) {
   const seen = new Set();
@@ -4531,17 +4622,15 @@ function dedupeById(rows, idColumns, joinKeyCandidates = null) {
 
 
 
-
 // Accumulate distinct values per (project, year, field) and counts per (project, year)
 function accumulate(rows, { joinKey, dateCands, fyCands, fields, idCols }) {
-  // pass joinKey candidates into dedupe so de-dup is project-scoped
   const deduped = dedupeById(rows, idCols, Array.isArray(joinKey) ? joinKey : [joinKey]);
 
   const values = new Map();
   const counts = new Map();
 
   for (const row of deduped) {
-    const pkey = resolveJoinValue(row, joinKey);  // ← robust
+    const pkey = resolveJoinValue(row, joinKey);
     if (!pkey) continue;
 
     const year = pickEventYear(row, dateCands, fyCands);
@@ -4551,7 +4640,7 @@ function accumulate(rows, { joinKey, dateCands, fyCands, fields, idCols }) {
     counts.set(ck, (counts.get(ck) ?? 0) + 1);
 
     for (const field of fields) {
-      const val = firstPresentValue(row, [field]); // your existing tolerant value getter
+      const val = firstPresentValue(row, [field]);
       if (val == null || String(val).trim() === "") continue;
       const mapKey = `${pkey}::${year}::${field}`;
       if (!values.has(mapKey)) values.set(mapKey, new Set());
@@ -4560,7 +4649,6 @@ function accumulate(rows, { joinKey, dateCands, fyCands, fields, idCols }) {
   }
   return { values, counts };
 }
-
 
 function applyToProjectRow(prow, pname, bucket, counts, fields, prefix) {
   const out = { ...prow };
@@ -4579,77 +4667,52 @@ function applyToProjectRow(prow, pname, bucket, counts, fields, prefix) {
       if (!bucket.has(key)) continue;
       const vals = Array.from(bucket.get(key).values()).sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
       if (!vals.length) continue;
-      out[`${outLabel(field)}_${y}`] = vals.join(DELIM); // flat string, no nested objects
+      out[`${outLabel(field)}_${y}`] = vals.join(DELIM);
     }
   }
   return out;
 }
 
 
-// returns true if the enriched row shows activity in ANY of the given years
-function hadEventInYears(out, years) {
-  for (const y of years) {
-    const t = Number(out[`trip_count_${y}`] ?? 0);
-    const m = Number(out[`monitoring_count_${y}`] ?? 0);
-    if (t > 0 || m > 0) return true;
+/*******************************
+ * STRICTER PREDICATES (fix “everything true”)
+ *******************************/
+const PROBE_BASES = [
+  "Trip Start Date", "Trip End Date", "Project Visit: ID",
+  "Monitoring Activity Date", "Site Visit Start Date", "Monitoring Activity: ID"
+];
 
-    // Fallback: check a few reliable year-suffixed fields for any non-empty value
-    const probe = [
-      "Trip Start Date", "Trip End Date", "Project Visit: ID",
-      "Monitoring Activity Date", "Site Visit Start Date", "Monitoring Activity: ID"
-    ];
-    for (const base of probe) {
-      const key = `${base}_${y}`;
-      if (key in out && out[key] != null && String(out[key]).trim() !== "") {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-```
-
-
-```js
 // Reusable predicate: does this row have ANY monitoring or trip activity in `year`?
 function hasEventForYear(row, year) {
   const t = Number(row?.[`trip_count_${year}`] ?? 0);
   const m = Number(row?.[`monitoring_count_${year}`] ?? 0);
   if (t > 0 || m > 0) return true;
 
-  // Fallback: any non-empty field ending with _YYYY (excluding the count fields)
-  const suffix = `_${year}`;
-  for (const [k, v] of Object.entries(row)) {
-    if (
-      k.endsWith(suffix) &&
-      k !== `trip_count_${year}` &&
-      k !== `monitoring_count_${year}` &&
-      v != null &&
-      String(v).trim() !== ""
-    ) {
-      return true;
-    }
-  }
+  // Require that enrichment actually ran (counts present for any year)
+  const joined = Object.keys(row).some(
+    k => k.startsWith("trip_count_") || k.startsWith("monitoring_count_")
+  );
+  if (!joined) return false;
+
+  // Only probe known enrichment fields (avoid unrelated *_YYYY columns)
+  return PROBE_BASES.some(base => {
+    const key = `${base}_${year}`;
+    const v = row[key];
+    return v != null && String(v).trim() !== "";
+  });
+}
+
+function hadEventInYears(out, years) {
+  for (const y of years) if (hasEventForYear(out, y)) return true;
   return false;
 }
-```
 
-<!-- We'll want to generalize this and improve handling of fields
-```js
-view(Inputs.table(
-  enriched_projects_flat.filter(r => hasEventForYear(r, 2024)),
-  { columns: ["Project Name",  "site_visited_in_past_two_years", "trip_count_2024", "monitoring_count_2024", "Monitoring Activity: Monitoring Activity Number_2024",
-  "Monitoring Activity: ID_2024", "Monitoring Activity Date_2024", "Monitoring Activity Type_2024"] }
-))
-```
--->
-
-
-```js
+/*******************************
+ * MAIN: STRICT ENRICH
+ *******************************/
 function reconcileProjectsFlatStrict(projects, trips_with_visits, monitoring_activities) {
-  // Accumulate trips and monitoring ONCE (keyed by normalized Project Number from the monitoring files)
-const tripsAcc = accumulate(trips_with_visits, {
+  // Accumulate trips and monitoring ONCE (keyed by whatever joinKey resolves to per row)
+  const tripsAcc = accumulate(trips_with_visits, {
     joinKey: JOIN_KEY_MONITORING,
     dateCands: TRIP_DATE_CANDS,
     fyCands: TRIP_FISCAL_YEAR_CANDS,
@@ -4665,9 +4728,9 @@ const tripsAcc = accumulate(trips_with_visits, {
     idCols: MON_ID_COLS
   });
 
-  // Build enriched rows by iterating the ORIGINAL array (preserves 1:1 row count)
+  // Enrich original projects (1:1 row count preserved)
   const enriched = projects.map((prow) => {
-    const projKey = resolveJoinValue(prow, JOIN_KEY_PROJECTS); // ← robust
+    const projKey = resolveJoinValue(prow, JOIN_KEY_PROJECTS); // ← now tries Project ID first
     let out = { ...prow };
 
     if (projKey) {
@@ -4683,9 +4746,187 @@ const tripsAcc = accumulate(trips_with_visits, {
   return enriched;
 }
 
+
+/*******************************
+ * VISITS-BY-FY (with FY fallback from dates)
+ *******************************/
+// Minimal-call API:
+//   result = reconcileVisitsByFY(projects, trips_with_visits)
+//
+// Adds year-suffixed columns for all present fields below, plus Visited / Years Visited.
+function reconcileVisitsByFY(projects, trips, opts = {}) {
+  const defaults = {
+    projectKey: "Project Name",
+    fiscalYearKey: "Visit Fiscal Year",
+    fieldsToFlatten: [
+      "Trip: Name",
+      "Project Visit: Visit Number",
+      "Trip: ID",
+      "Start Date",
+      "Trip Countries",
+      // Newly requested fields:
+      "Visit Reason",
+      "Project Visit: Record Type",
+      "Project Name: Project Owner: Division",
+      "Comments",
+      "ENV Summary",
+      "SOC Summary",
+    ],
+  };
+  const cfg = { ...defaults, ...opts };
+
+  // --- helpers specific to this function ---
+  const nbsp = /\u00a0/g;
+  const collapseSpaces = s => String(s ?? "").replace(nbsp, " ").replace(/\s+/g, " ").trim();
+  const normCol = s => collapseSpaces(s).replace(/\s*:\s*/g, ": ");
+  const get = (obj, key) => obj?.[key] ?? obj?.[normCol(key)] ?? "";
+  const parseFY = v => (String(v ?? "").match(/(\d{4})/) || [,""])[1] || null;
+  const parseDateTS = v => { const t = Date.parse(String(v ?? "")); return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY; };
+  const dedupJoin = arr => {
+    const out = [], seen = new Set();
+    for (const v of arr.map(x => String(x ?? "").trim()).filter(Boolean)) {
+      if (!seen.has(v)) { seen.add(v); out.push(v); }
+    }
+    return out.join(" | ");
+  };
+  const normObjKeys = o => Object.fromEntries(Object.entries(o).map(([k,v]) => [normCol(k), v]));
+
+  // Normalize rows
+  const projRows = projects.map(normObjKeys);
+  const tripRows = trips.map(normObjKeys);
+
+  // --- auto-detect keys ---
+  const projKey = normCol(cfg.projectKey);
+  const tripKeys = Object.keys(tripRows[0] || {});
+
+  let tripProjectKey =
+    tripKeys.find(k => k === " Project Name:  Project Name") ||
+    tripKeys.find(k => k.toLowerCase().endsWith("project name")) ||
+    tripKeys.find(k => k.toLowerCase() === "project name: project name") ||
+    tripKeys.find(k => k.toLowerCase() === "project name");
+  if (!tripProjectKey) throw new Error("Could not auto-detect trips project-name column.");
+
+  // Fiscal year column (allow fallback from date)
+  let fyKey = tripKeys.find(k => k === cfg.fiscalYearKey) ||
+              tripKeys.find(k => k.toLowerCase().replace(/\s+/g,"") === cfg.fiscalYearKey.toLowerCase().replace(/\s+/g,""));
+
+  // usable date column for FY synthesis if needed
+  const dateKey = TRIP_DATE_CANDS.find(k => tripKeys.includes(k));
+  if (!fyKey && !dateKey) throw new Error("Trips file has neither 'Visit Fiscal Year' nor a usable date.");
+
+  // Only keep fields that actually exist
+  const fieldsToFlatten = cfg.fieldsToFlatten.filter(f =>
+    Object.prototype.hasOwnProperty.call(tripRows[0] || {}, f) ||
+    Object.prototype.hasOwnProperty.call(tripRows[0] || {}, normCol(f))
+  );
+
+  // Prepare trips
+  const preppedTrips = tripRows
+    .map(row => {
+      const projName = collapseSpaces(get(row, tripProjectKey));
+      // if FY present use it, else synthesize from date
+      let fy = fyKey ? parseFY(get(row, fyKey)) : null;
+      if (!fy && dateKey) {
+        const y = parseYearSmart(get(row, dateKey));
+        fy = y ? String(y) : null;
+      }
+      const sortKey = parseDateTS(get(row, "Start Date"));
+      const picked = {};
+      for (const f of fieldsToFlatten) picked[f] = get(row, f);
+      return { projName, fy, sortKey, ...picked };
+    })
+    .filter(r => r.projName && r.fy);
+
+  // Stable order (earliest Start Date first)
+  preppedTrips.sort((a, b) =>
+    a.projName.localeCompare(b.projName) ||
+    a.fy.localeCompare(b.fy) ||
+    (a.sortKey - b.sortKey)
+  );
+
+  // Aggregate by project + FY
+  const byProjFY = new Map();
+  for (const row of preppedTrips) {
+    const key = `${row.projName}||${row.fy}`;
+    let agg = byProjFY.get(key);
+    if (!agg) {
+      agg = { projName: row.projName, fy: row.fy };
+      for (const f of fieldsToFlatten) agg[f] = [];
+      byProjFY.set(key, agg);
+    }
+    for (const f of fieldsToFlatten) agg[f].push(row[f]);
+  }
+
+  // Build wide columns (Field_YYYY)
+  const perProjectWide = new Map();
+  for (const { projName, fy, ...rest } of byProjFY.values()) {
+    let bag = perProjectWide.get(projName);
+    if (!bag) { bag = {}; perProjectWide.set(projName, bag); }
+    for (const f of fieldsToFlatten) {
+      bag[`${f}_${fy}`] = dedupJoin(rest[f] || []);
+    }
+  }
+
+  // Years visited per project
+  const yearsByProject = new Map();
+  for (const { projName, fy } of byProjFY.values()) {
+    if (!yearsByProject.has(projName)) yearsByProject.set(projName, new Set());
+    yearsByProject.get(projName).add(fy);
+  }
+
+  // Merge into projects
+  const result = projRows.map(p => {
+    const projName = collapseSpaces(p[projKey] ?? p[normCol(projKey)] ?? "");
+    const wide = perProjectWide.get(projName) || {};
+    const years = Array.from(yearsByProject.get(projName) ?? []).sort();
+    return {
+      ...p,
+      Visited: years.length ? "Yes" : "No",
+      "Years Visited": years.join(", "),
+      ...wide,
+    };
+  });
+
+  return result;
+}
+
+/*******************************
+ * DIAGNOSTICS (optional but handy)
+ *******************************/
+function printJoinDiagnostics(projects, trips_with_visits, monitoring_activities) {
+  const tripsAcc = accumulate(trips_with_visits, {
+    joinKey: JOIN_KEY_MONITORING,
+    dateCands: TRIP_DATE_CANDS,
+    fyCands: TRIP_FISCAL_YEAR_CANDS,
+    fields: TRIP_FIELDS,
+    idCols: TRIP_ID_COLS
+  });
+  const monAcc = accumulate(monitoring_activities, {
+    joinKey: JOIN_KEY_MONITORING,
+    dateCands: MON_DATE_CANDS,
+    fyCands: MON_FISCAL_YEAR_CANDS,
+    fields: MONITORING_FIELDS,
+    idCols: MON_ID_COLS
+  });
+
+  const keysTrips = new Set([...tripsAcc.counts.keys()].map(k => k.split("::")[0]));
+  const keysMon   = new Set([...monAcc.counts.keys()].map(k => k.split("::")[0]));
+  let matchedTrips = 0, matchedMon = 0;
+
+  for (const prow of projects) {
+    const k = resolveJoinValue(prow, JOIN_KEY_PROJECTS);
+    if (k && keysTrips.has(k)) matchedTrips++;
+    if (k && keysMon.has(k))   matchedMon++;
+  }
+  console.log("JOIN DIAGNOSTICS:", {
+    projects: projects.length,
+    matchedTrips,
+    matchedMon
+  });
+}
 ```
 
-Referning both the 'Project Visits' and 'Monitoring Activities' reports, we encoded data with historical site visit information:
+Referning both the 'Project Visits' and 'Monitoring Activities' reports, we encode data with historical site visit information:
 
 
 ```js
@@ -4962,6 +5203,10 @@ const applyAnalystRiskModifiers = (() => {
     "Significant Community Risk",
     "Significant Labor Risk",
     "Significant Environmental Risk",
+    "Client Reporting",
+    "IESC Reporting",
+    "Regular E&S Reporting",
+    "Regular IESC Reporting"
   ];
 
   const fieldsFreeText = ["Operational Phase"];
@@ -5038,21 +5283,21 @@ This final step encodes the calculated risk accelerants and mitigants:
 // Weights per your updated table
 // Weights
 const W = {
-  monitoredLast2Y: 20,               // subtract 20 if yes
-  multipleLenders: 2,                // subtract 2 if yes
-  clientReporting: 2,                // subtract 2 if yes (only if present)
-  iescReporting: 2,                  // subtract 2 if yes (only if present)
-  adequateIESCSupervision: 5,        // subtract 5 if yes
-  redFlag_008: 5,                    // +5 if adverse_impact_2023 is true
-  significantESIncident: 10,         // +10 if any Incident Received Q* 2025 is true
-  closeProximity: 3,                 // +3 if yes
-  preConstructionPhase: 2,           // +2 if Operational Phase = pre-construction
-  constructionPhase: 1,              // +1 if Operational Phase = construction
-  significantCommunityRisk: 10,      // +10 if yes
-  significantLaborRisk: 2,           // +2 if yes
-  significantEnvironmentalRisk: 2,   // +2 if yes
-  strategicInterest: 1,              // +1 if yes
-  analystAdjustment: 5               // clamp ±5
+  monitoredLast2Y: monitoredLast2Yi,               // subtract 20 if yes
+  multipleLenders: multipleLendersi,                // subtract 2 if yes
+  clientReporting: clientReportingi,                // subtract 2 if yes (only if present)
+  iescReporting: iescReportingi,                  // subtract 2 if yes (only if present)
+  adequateIESCSupervision: adequateIESCSupervisioni,        // subtract 5 if yes
+  redFlag_008: redFlagi1,                    // +5 if adverse_impact_2023 is true
+  significantESIncident: redFlagi2,         // +10 if any Incident Received Q* 2025 is true
+  closeProximity: closeProximityi,                 // +3 if yes
+  preConstructionPhase: constructionPhasei1,           // +2 if Operational Phase = pre-construction
+  constructionPhase: constructionPhasei2,              // +1 if Operational Phase = construction
+  significantCommunityRisk: significantCommunityRiski,      // +10 if yes
+  significantLaborRisk: significantLaborRiski,           // +2 if yes
+  significantEnvironmentalRisk: significantEnvironmentalRiski,   // +2 if yes
+  strategicInterest: strategicInteresti,              // +1 if yes
+  analystAdjustment: analystAdjustmenti               // clamp ±5
 };
 
 // 'yes' = yes/true/1 or any positive number
@@ -5093,27 +5338,27 @@ function calculateContextScore(rows) {
 
     // --- Mitigants (subtract) ---
     if ("site_visited_in_past_two_years" in row && yes(row["site_visited_in_past_two_years"])) {
-      score -= W.monitoredLast2Y;
+      score += W.monitoredLast2Y;
       ctx.site_visited_in_past_two_years = `−${W.monitoredLast2Y}`;
     }
 
     if ("Multiple Lenders" in row && yes(row["Multiple Lenders"])) {
-      score -= W.multipleLenders;
+      score += W.multipleLenders;
       ctx.multipleLenders = `−${W.multipleLenders}`;
     }
 
     if (hasClientReporting && yes(row["Client Reporting"])) {
-      score -= W.clientReporting;
+      score += W.clientReporting;
       ctx.clientReporting = `−${W.clientReporting}`;
     }
 
     if (hasIESCReporting && yes(row["IESC Reporting"])) {
-      score -= W.iescReporting;
+      score += W.iescReporting;
       ctx.iescReporting = `−${W.iescReporting}`;
     }
 
     if ("Adequate IESC Supervision" in row && yes(row["Adequate IESC Supervision"])) {
-      score -= W.adequateIESCSupervision;
+      score += W.adequateIESCSupervision;
       ctx.adequateIESCSupervision = `−${W.adequateIESCSupervision}`;
     }
 
@@ -5425,7 +5670,7 @@ display(segmentedPortfolio.filter(d => d.monitoringTier === "standard monitoring
 ### Site Monitoring
 
 ```js
-const top = view(Inputs.range([12,48], {value: 36, step: 1}))
+const top = view(Inputs.range([12,60], {value: 36, step: 1}))
 ```
 
 ```js
