@@ -1,138 +1,249 @@
-# Active Projects List
+# Creating the Active Projects List
 
-
----
-
-## Creating the Active Projects Dataset
+ 
 
 <br/>
 
-**Step 1:** Load in the 'All Projects' report from Insight:
+ 
+
+## **Step 1:**
+
+### Load in the 'All Projects' report from Insight
+
+ 
 
 <!--
+
 Requires using the 'Projects with RFC report template in Insight.
+
+ 
 
 Required attributes are:
 
+ 
+
 - Process Stage
+
 - First Disbursement Date
+
 - Project Record Type
+
 - Project Name
+
 - Current Department
+
 - Clearance Type (RFC/RFA)
+
 - Commitment Date
+
 -->
 
+ 
+
 ```js
+
 const local_file_insight_all_projects = view(Inputs.file({label: "Project Portfolio", accept: ".csv"}));
+
 ```
 
+ 
 
 ```js
+
 // IndexedDB Setup
+
 const dbName_insight_all_projects  = "insight_all_projects";
+
 const dbVersion_insight_all_projects  = 1;
+
 const storeName_insight_all_projects  = "insight_all";
+
 ```
 
+ 
+
 ```js
+
 // Function to open or create IndexedDB
+
 async function openDB_insight_all_projects () {
+
     return new Promise((resolve, reject) => {
+
         const request = indexedDB.open(dbName_insight_all_projects , dbVersion_insight_all_projects );
-        
+
+       
+
         request.onupgradeneeded = (event) => {
+
             const db = event.target.result;
+
             db.createObjectStore(storeName_insight_all_projects , { keyPath: "id" });
+
         };
-        
+
+       
+
         request.onsuccess = () => resolve(request.result);
+
         request.onerror = () => reject(request.error);
+
     });
+
 }
+
 ```
 
+ 
+
 ```js
+
 // Function to get data from IndexedDB
+
 async function getData_insight_all_projects () {
+
     const db = await openDB_insight_all_projects();
+
     return new Promise((resolve, reject) => {
+
         const transaction = db.transaction(storeName_insight_all_projects , "readonly");
+
         const store = transaction.objectStore(storeName_insight_all_projects );
+
         const request = store.get("state_data_insight_all_projects");
-        
+
+       
+
         request.onsuccess = () => resolve(request.result?.data ?? template_data_insight_all_projects);
+
         request.onerror = () => reject(request.error);
+
     });
+
 }
+
 ```
 
+ 
+
 ```js
+
 // Function to save data to IndexedDB
+
 async function saveData_insight_all_projects(data) {
+
     const db = await openDB_insight_all_projects();
+
     return new Promise((resolve, reject) => {
+
         const transaction = db.transaction(storeName_insight_all_projects, "readwrite");
+
         const store = transaction.objectStore(storeName_insight_all_projects);
+
         store.put({ id: "state_data_insight_all_projects", data });
-        
+
+       
+
         transaction.oncomplete = () => resolve();
+
         transaction.onerror = () => reject(transaction.error);
+
     });
+
 }
+
 ```
 
+ 
 
 ```js
+
 // needed to correctly initialize the chart
+
 const template_data_insight_all_projects = FileAttachment("/data/internal/all_projects_template_minimal.csv").csv()
+
 ```
 
+ 
+
 ```js
+
 /// Initialize state_data with IndexedDB or template data
+
 let state_data_insight_all_projects = Mutable(await getData_insight_all_projects ());
 
+ 
+
 function swap_data_insight_all_projects(data) {
+
   state_data_insight_all_projects.value = data;
+
 }
 
+ 
+
 (async function(d) {
+
     return d === null ? "pending file selection" : state_data_insight_all_projects.value = await d.json();
+
 })(local_file_insight_all_projects);
+
 ```
 
+ 
 
 ```js
+
 // removing view here temporarily
+
 const load_template_data_insight_all_projects = Inputs.button("Reset Template", {reduce: () => swap_data_insight_all_projects(template_data_insight_all_projects)})
+
 ```
 
+ 
 
 ```js
+
  const report_insight_all_projects  = (async () => {////
+
   try {
+
     return await local_file_insight_all_projects.csv();
+
   } catch (error) {
+
     console.warn("error with file", error);
+
     return state_data_insight_all_projects;
+
   }
+
 })();
 
+ 
+
 ```
 
 
 
 ```js
+
 // Optional auto-persist
+
  await saveData_insight_all_projects(report_insight_all_projects);
+
 ```
 
 
 
 ```js
+
 //const workbook = await FileAttachment('/data/all-projects.xlsx').xlsx()
+
 const projects = report_insight_all_projects
+
 display(projects)
+
 ```
 
  
@@ -151,194 +262,121 @@ const search_projects_table = view(Inputs.table(search_projects))
 
 ```
 
+
+
+<br/>
+
  
 
+## **Step 2:**
 
+### Gather all projects where the process stage indicates a project is active
 
-**Step 2:**  Filter out projects that do not have a disbursement date, except for those where 'Project Record Type' is 'Fund' or 'Insurance'.
  
+
 <!--
-More accurately, this code says to keep all Funds and Insurance projects, plus any other project that actually has a disbursement date. Remove everything else.
 
-We use tis filter because several financial instruments would not have a disbursement date, including Loan Portfolio Guarantees (LPG) and Investment Portfolio Guarantees (under OPIC).
+Question - Are all invested for PortCo AND do we wish to exclude for PortCo.
+
 -->
+
+ 
 
 ```js
-const disbursement_filter = projects.filter(project => {
 
-  const date = project["First Disbursement Date"];
-  const record_type = project["Project Record Type"];
-  const specialTypes = ["Fund", "Insurance"];
-
-  return (
-
-    specialTypes.includes(record_type) ||
-
-    (date !== '' && date !== null && date !== undefined)
-
-  );
-
-});
-
-
-display(disbursement_filter);
-```
-
- 
-
-
-**Step 3:** Filter for only those projects where the process stage indicates a project is active.
-
-<!--
-Note: The 'Invested' value is used to indicate active Portfolio Companies.  We do not include it here because we do not wish to include Portfolio Companies for E&S monitoring.
-
-Also, the 'Committed' and 'Commitment Letter Executed' tags are not great indicators for 'active' projects because they don't indicate that an DFC funds have yet been applied to a project.  Several projects historically have been committed but never disbursed.
--->
-
-
-```js echo
-
-const disbursement_and_stage_filter = projects.filter(project =>
+const stage_filter = projects.filter(project =>
 
   ["Contract Executed", "Executed Agreement", "Disbursing (after 1st Disbursement)", "Loan Disbursed", "Fully Disbursed", "Transferred to Monitoring", "Liquidating" ].includes(project["Process Stage"])
 
 );
 
-display(disbursement_and_stage_filter)
+display(stage_filter)
 
 ```
 
+ 
 
+```js
 
-**Step 4:** Remove from the dataset any Fund or Insurance records where the 'Process Stage' is not 'Transferred to Monitoring' or 'Executed Agreement'.
+view(Inputs.table(stage_filter))
 
- <!--
- The below may need to be revisited.  It looks like it says:
+```
 
-- If it’s a Fund or Insurance (allowedRecordType), it gets included no matter what the stage is.
+ 
 
-- If it has a disbursement date, it’s included.
+```js
 
-- If its stage is "Transferred to Monitoring" or "Executed Agreement", it’s included.
+display(download(serializeToCSV(stage_filter), "stage_filter", "Download Data"))
 
-So:
+```
 
-- Funds and Insurance records are always kept, even if they’re at a stage you don’t want.
+ 
 
-- We’re not excluding the extra ones as you intended.
- -->
+<br/>
 
+ 
 
-```js echo
+## **Step 3:**
 
-const disbursement_filter_refined = disbursement_and_stage_filter.filter(project => {
+### Filter out projects that do not have a disbursement date, except for those where 'Project Record Type' is 'Fund' or 'Insurance'
 
-  const date = project["First Disbursement Date"];
-  const record_type = project["Project Record Type"];
-  const process_stage = project["Process Stage"];
+ 
 
-  const hasDisbursementDate = date !== '' && date !== null && date !== undefined;
+ 
 
-  const allowedRecordType = ["Fund", "Insurance"].includes(record_type);
+<!--
 
-  const allowedStage = ["Transferred to Monitoring", "Executed Agreement"].includes(process_stage);
+/// Operate on the 'non-insurance projects' to remove the ones that haven't disbursed.
 
-  return allowedRecordType || hasDisbursementDate || allowedStage;
-});
+ 
 
+More accurately, this code says to keep all Funds and Insurance projects, plus any other project that have a disbursement date. Remove everything else.
+
+ 
+
+We wish for a permissive filter because several financial instruments would not have a disbursement date, including Loan Portfolio Guarantees (LPG) and Investment Portfolio Guarantees (under OPIC).
+
+-->
+
+ 
+
+```js
+
+const disbursement_filter = stage_filter.filter(
+
+  project => ["Fund", "Insurance"].includes(project["Project Record Type"]) || (project["First Disbursement Date"] != null && project["First Disbursement Date"] !== '')
+
+);
+
+ 
 
 display(disbursement_filter);
 
+display(d3.group(disbursement_filter, d => d["Project Record Type"], d => d["Process Stage"]  ))
+
 ```
 
-<!-->
+ 
+
 ```js
-/// CHECK IF THIS IS BETTER:
 
-//const disbursement_filter = disbursement_and_stage_filter.filter(project => {
-//  const record_type = project["Project Record Type"];
-//  const process_stage = project["Process Stage"];
-
-//  const isFundOrInsurance = ["Fund", "Insurance"].includes(record_type);
-//  const isAllowedStage = ["Transferred to Monitoring", "Executed Agreement"].includes(process_stage);
-
-  // Exclude only if Fund/Insurance AND not in an allowed stage
-//  if (isFundOrInsurance && !isAllowedStage) {
-//    return false;
-//  }
-
-//  return true; // Keep everything else
-//});
-
-```
---->
-
-
-**Step 5:**  Exclude anything where 'Project Record Type' is 'Project Development' or "Portfolio Company". Also remove any Insurance records where 'Process Stage' is not 'Contract Executed' (only allow for contract executed). 
-
- <!--
-This looks like it's repeating logic from above.  Figure out what the filters were doing and clarify
--->
-
-
-
-```js echo
-
-const refined_filter = disbursement_filter_refined.filter(project => {
-
-  const recordType = project["Project Record Type"];
-  const processStage = project["Process Stage"];
-
-  // Rule 1: Exclude Project Development and Portfolio Company entirely
-
-  if (["Project Development", "Portfolio Company"].includes(recordType)) {
-    return false;
-  }
-
-  // Rule 2: For Insurance, keep only if stage is 'Contract Executed'
-
-  if (recordType === "Insurance" && processStage !== "Contract Executed") {
-    return false;
-  }
-
-  // Everything else stays
-  return true;
-
-});
-
-display(refined_filter);
+view(Inputs.table(disbursement_filter))
 
 ```
 
-**Step 6:** 
+ 
+
+```js
+
+display(download(serializeToCSV(disbursement_filter), "disbursement_filter", "Download Data"))
+
+```
+
+ 
 
 <!--
 
- 
-
-**Step 4:** Remove legacy projects, as indicated by having a 'Project Owner: Department' assigned to OPIC or a DFC department:
-
- 
-
-!! We no longer know why this is included.
-
- 
-
-(old crud)
-
- 
-
-```js echo
-
-const disbursement_stage_and_owner_filter = disbursement_and_stage_filter.filter(project => {
-
-  return !["OPIC", "Investment Office (IO)", "Office of the Chief Executive (OCE)", "Office of Development Policy (ODP)"].includes(project["Project Owner: Department"]);
-
-});
-
-display(disbursement_stage_and_owner_filter);
-
-```
+/// THIS DOESN'T REMOVE ANY RECORDS
 
 -->
 
@@ -346,7 +384,121 @@ display(disbursement_stage_and_owner_filter);
 
 <!--
 
-New step - Operate on the 'non-insurance projects' to remove the ones that haven't disbursed.
+WE DON'T WISH TO EXCLUDE THESE.
+
+ 
+
+**Step 4:** Remove 'Fund' and 'Insurance' projects where values for "Process Stage" are neither "Transferred to Monitoring" nor "Contract Executed".
+
+ 
+
+```js
+
+const disbursement_filter_elaborated = disbursement_filter.filter(p =>
+
+  !["Fund", "Insurance"].includes(p["Project Record Type"]) ||
+
+  ["Transferred to Monitoring", "Contract Executed", "Executed Agreement"].includes(p["Process Stage"])
+
+);
+
+ 
+
+display(disbursement_filter_elaborated)
+
+display(d3.group(disbursement_filter_elaborated, d => d["Project Record Type"]))
+
+```
+
+ 
+
+```js
+
+view(Inputs.table(disbursement_filter_elaborated))
+
+```
+
+-->
+
+ 
+
+<br/>
+
+ 
+
+## **Step 4:**
+
+### Exclude anything where 'Project Record Type' is 'Project Development' or 'Portfolio Company'
+
+ 
+
+```js
+
+const portCo_filter = disbursement_filter.filter(
+
+  p => !["Project Development", "Portfolio Company"].includes(p["Project Record Type"])
+
+);
+
+ 
+
+display(portCo_filter);
+
+display(d3.group(portCo_filter, d => d["Project Record Type"], d => d["Process Stage"]  ))
+
+```
+
+ 
+
+```js
+
+view(Inputs.table(portCo_filter))
+
+```
+
+ 
+
+```js
+
+display(download(serializeToCSV(portCo_filter), "portCo_filter", "Download Data"))
+
+```
+
+ 
+
+<br/>
+
+ 
+
+## **Step 5:**
+
+### Exclude Insurance records where 'Project Name' starts with either 'IRC' or 'DAI' and keep only those where the Process Stage is 'Contract Executed'
+
+ 
+
+<!--
+
+Find a way to exclude non-active insurance and all TA project.
+
+ 
+
+Exclude anything where Project Record Type is 'Project Development'
+
+For insurance - remove any where 'process stage' is not 'contract executed' (only allow for contract executed).
+
+ 
+
+<mark>LOOK LOOK</mark>
+
+ 
+
+I wish to exclude anything where 'Project Record Type' is 'Project Development'.  I also wish to remove any entries where 'Project Record Type' is 'Insurance' and where 'Process Stage' is not 'Contract Executed'.
+
+-->
+
+ 
+
+<!--
 
  
 
@@ -359,71 +511,136 @@ We wish to return all results from the original dataset, except for those projec
 -->
 
  
-<!--
 
-Find a way to exclude non-active insurance and all TA project.
+```js
 
--->
+const insurance_irc_dai_filter = portCo_filter.filter(project => {
 
-
-```js echo
-
-const insurance_irc_dai_filter = refined_filter.filter(project => {
   const recordType = project["Project Record Type"];
+
   const projectName = (project["Project Name"] || "");
+
+  const processStage = project["Process Stage"];
+
+ 
 
   // Exclude if it's Insurance AND starts with IRC or DAI
 
   if (
+
     recordType === "Insurance" &&
+
     (projectName.startsWith("IRC") || projectName.startsWith("DAI"))
+
   ) {
+
     return false;
+
   }
+
+ 
+
+  if (recordType === "Insurance" && processStage !== "Contract Executed") {
+
+    return false;
+
+  }
+
+ 
 
   return true; // keep all other cases
 
 });
 
+ 
+
 display(insurance_irc_dai_filter);
+
+display(d3.group(insurance_irc_dai_filter, d => d["Project Record Type"], d => d["Process Stage"]  ))
+
+display(d3.group(insurance_irc_dai_filter, d => d["Current Department"] ))
+
 ```
 
  
 
-```js echo
-const cleaned_results = insurance_irc_dai_filter.filter(project => {
+```js
 
-  const projectName = (project["Project Name"] || "");
-  const currentDepartment = project["Current Department"] || "";
+view(Inputs.table(insurance_irc_dai_filter))
 
-  // Exclude if name starts with 'Unallocated Portion'
-
-  if (projectName.startsWith("Unallocated Portion")) {
-    return false;
-  }
-
-  // Exclude if department is 'Technical Assistance'
-
-  if (currentDepartment === "Technical Assistance") {
-    return false;
-  }
-
-  // Keep everything else
-
-  return true;
-
-});
-
-display(cleaned_results);
 ```
 
  
 
-```js echo
+```js
 
-const with_clearance_type = cleaned_results.filter(project => {
+display(download(serializeToCSV(insurance_irc_dai_filter), "insurance_irc_dai_filter", "Download Data"))
+
+```
+
+<!--
+
+<br/>
+
+ 
+
+## **Step 6:** Remove all project where 'Project Name' starts with 'Unallocated Portion'. Also remove projects where 'Current Department' is 'Technical Assistance'.
+
+ 
+
+```js
+
+const clean_up = insurance_irc_dai_filter.filter(p =>
+
+  !( (p["Project Name"] || "").startsWith("Unallocated Portion") || (p["Current Department"] || "") === "Technical Assistance" )
+
+);
+
+ 
+
+display(clean_up);
+
+display(d3.group(clean_up, d => d["Current Department"]  ))
+
+```
+
+ 
+
+```js
+
+view(Inputs.table(clean_up))
+
+```
+
+
+
+```js
+
+display(download(serializeToCSV(clean_up), "clean_up", "Download Data"))
+
+```
+
+-->
+
+ 
+
+<br/>
+
+ 
+
+## **Step 6:**
+
+### Remove all project that do not have a value for 'Clearance Type (RFC/RFA)'
+
+ 
+
+```js
+
+const clearance_type_filter = insurance_irc_dai_filter.filter(project => {
 
   const clearanceType = project["Clearance Type (RFC/RFA)"];
+
+ 
 
   // Keep only if it's not null/undefined and not an empty string after trimming
 
@@ -435,12 +652,29 @@ const with_clearance_type = cleaned_results.filter(project => {
 
 });
 
+ 
 
-display(with_clearance_type);
+display(clearance_type_filter);
 
 ```
 
+ 
 
+```js
+
+view(Inputs.table((clearance_type_filter)))
+
+```
+
+ 
+
+```js
+
+display(download(serializeToCSV(clearance_type_filter), "clearance_type_filter", "Download Data"))
+
+```
+
+ 
 
 <!--
 
@@ -450,13 +684,21 @@ Ok, let's start from a dataset named 'insurance_irc_dai_filter'.  Please show me
 
  
 
-**Step 7:** Remove all records before Dec 30, 2005:
+<br/>
 
+ 
 
-```js echo
+## **Step 7:**
 
-const disbursement_stage_and_owner_and_date_filter = cleaned_results.filter(project => new Date(project['Commitment Date']) >= new Date('2005-12-31'));
+### Remove all records before Dec 30, 2005
 
+ 
+
+```js
+
+const disbursement_stage_and_owner_and_date_filter = clearance_type_filter.filter(project => new Date(project['Commitment Date']) >= new Date('2005-12-31'));
+
+ 
 
 display(disbursement_stage_and_owner_and_date_filter);
 
@@ -492,18 +734,6 @@ display(download(serializeToCSV(disbursement_stage_and_owner_and_date_filter), "
 
  
 
----
-
- 
-
-**Analysis and Next Steps**
-
- 
-
-The resulting dataset of ${disbursement_stage_and_owner_filter.length} differs from Justin's hand-crafted 'Active Project list' in that we're reporting out "investments funds" that aren't meant to be included.
-
- 
-
 !!! HERE!!!!!
 
  
@@ -520,25 +750,21 @@ Ways to advance - EXCLUDE guarantees from pre-DFC days.
 
 ---
 
- 
-
-Active
+A MORE PERMISSIVE 'ACTIVE LIST' - WHAT DFC IS ACTIVELY WORKING ON
 
  
 
 1st check - is process stage; be inclusive : (leave in RFC completed pending review)
 
- 
-
-... first indicator that it's moving off the committed.
-
- 
+... look for first indicator that it's moving off the committed.
 
 ... some insurance projects don't have have a disbursement record
 
  
 
-... first dibursement date
+indicators of being live:
+
+... first disbursement date
 
 -or-
 
@@ -550,9 +776,21 @@ Active
 
 ... final legal agreement date
 
+--->
+
  
 
-[INTEGRATES EXTERNAL REPORT BY OIF CALLED PorCo - supplied by OIC] - Justin adds project ID for parent project. ..... these are records that are not in Insight.  don't know what its called - only used by OIF. - (more useful in co-locating project) - reports to the ODP inbox.  
+<!---
+
+[INTEGRATES EXTERNAL REPORT BY OIF CALLED PorCo - supplied by OIC] - Justin adds project ID for parent project. ..... these are records that are not in Insight.  
+
+ 
+
+!!!
+
+ 
+
+don't know what its called - only used by OIF. - (more useful in co-locating project) - reports to the ODP inbox.  
 
 -> THEN, there is a 'newly added' tab, requested by Kate, identifying projcet that became active since last ran the list.  -> do a DIF
 
@@ -560,9 +798,9 @@ Active
 
 ++ check the crack
 
-1. commited + maturity date (if exists) == even if dates with no other fields, probably moving forward
+1. committed + maturity date (if exists) == even if dates with no other fields, probably moving forward
 
-2. activity in the project / proceedural actions actions meaning the project moving forward (requires going into the project)
+2. activity in the project / procedural actions actions meaning the project moving forward (requires going into the project)
 
  
 
@@ -702,47 +940,7 @@ function replacer(key, value) {
 
 ----
 
- 
 
-<!-- ARCHIVE: -->
-
- 
-
-```js
-
-//const process_stage_and_disbursement_or_legal_agreement_or_insurance_contract_executed = disbursement_and_stage_filter.filter(project => {
-
-//  const finalLegalDate = project["Final Legal Agreement Date"];
-
-//  const firstDisbursementDate = project["First Disbursement Date"];
-
-//  const naicsSector = project["NAICS/Sector"];
-
-//  const processStage = project["Process Stage"];
-
- 
-
-//  const hasValidDates = (finalLegalDate !== '' && finalLegalDate !== null && finalLegalDate !== undefined) ||
-
-//                        (firstDisbursementDate !== '' && firstDisbursementDate !== null && firstDisbursementDate !== undefined);
-
- 
-
-//  const isFinanceAndInsuranceWithContractExecuted = (naicsSector === 'Finance and Insurance') &&
-
-//                                                    (processStage && processStage.includes('Contract Executed'));
-
- 
-
-//  return hasValidDates || isFinanceAndInsuranceWithContractExecuted;
-
-//});
-
-//display(process_stage_and_disbursement_or_legal_agreement_or_insurance_contract_executed)
-
-```
-
- 
 
 ```js
 
