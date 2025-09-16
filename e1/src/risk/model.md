@@ -2340,16 +2340,165 @@ const onlyDigits = (v) => (v ?? "").toString().replace(/\D+/g, "");
 ```
 
 ```js
+
+// --- Header normalization & scoring -----------------------------------------
+
+const normHeader = s =>
+  (s ?? "")
+    .toString()
+    .toLowerCase()
+    // unify punctuation/spaces/underscores/“smart” dashes/colons
+    .replace(/[\u2013\u2014–—]/g, "-")
+    .replace(/[:()]/g, " ")
+    .replace(/[_\s]+/g, " ")
+    .trim();
+
+/** Score how much a header looks like a NAICS detailed (6-digit) column */
+function scoreDetailedHeader(h) {
+  const x = normHeader(h);
+  let score = 0;
+  if (/\bnaics\b/.test(x)) score += 5;
+  if (/\bcode\b/.test(x)) score += 3;
+  if (/\b6\b|\b6-?digit/.test(x)) score += 3;         // “6”, “6-digit”, “6 digit”
+  if (/\bprimary\b/.test(x)) score += 1;
+  // penalize obvious sector hints
+  if (/\bsector\b/.test(x)) score -= 2;
+  return score;
+}
+
+/** Score how much a header looks like a NAICS sector (2/3-digit) column */
+function scoreSectorHeader(h) {
+  const x = normHeader(h);
+  let score = 0;
+  if (/\bnaics\b/.test(x)) score += 5;
+  if (/\bsector\b/.test(x)) score += 4;
+  if (/\bcode\b/.test(x)) score += 2;
+  // discourage detailed-only hints
+  if (/\b6\b|\b6-?digit/.test(x)) score -= 2;
+  return score;
+}
+
+/** Given a row (or any header object), pick the best keys for detailed/sector. */
+function pickNaicsKeys(row) {
+  const keys = Object.keys(row ?? {});
+  let bestDet = { key: null, score: -Infinity };
+  let bestSec = { key: null, score: -Infinity };
+
+  for (const k of keys) {
+    const det = scoreDetailedHeader(k);
+    if (det > bestDet.score) bestDet = { key: k, score: det };
+
+    const sec = scoreSectorHeader(k);
+    if (sec > bestSec.score) bestSec = { key: k, score: sec };
+  }
+
+  // If both picks landed on the same key, prefer the one with larger margin
+  if (bestDet.key && bestSec.key && bestDet.key === bestSec.key) {
+    // Try to find an alternate runner-up for sector
+    const alt = keys
+      .filter(k => k !== bestDet.key)
+      .map(k => ({ key: k, score: scoreSectorHeader(k) }))
+      .sort((a,b) => b.score - a.score)[0];
+    if (alt && alt.score >= bestSec.score - 1) bestSec = alt;
+  }
+
+  return { detailedKey: bestDet.score > 0 ? bestDet.key : null,
+           sectorKey:   bestSec.score > 0 ? bestSec.key : null };
+}
+
+// Parse a cell into useful NAICS prefixes (supports ranges like "31–33")
+function parseNaicsValue(v) {
+  const s = (v ?? "").toString().trim();
+  if (!s) return [];
+
+  // Ranges like "31-33", "44–45"
+  const range = s.match(/\b(\d{2})\s*[-–—]\s*(\d{2})\b/);
+  if (range) {
+    // Conservatively return the first division in the range
+    return [range[1]]; // or return both ends if you want broader matches
+  }
+
+  const digits = onlyDigits(s);
+  if (!digits) return [];
+
+  // Gather candidates; we'll filter to [2,3,6] widths at the end
+  const out = [];
+  for (const n of [6,5,4,3,2]) {
+    if (digits.length >= n) out.push(digits.slice(0, n));
+  }
+  const uniq = [...new Set(out)];
+  return uniq.filter(x => [2,3,6].includes(x.length));
+}
+
+
+```
+
+```js
+
+// --- Row-level extraction (drop-in replacement for your helpers) --------------
+
+/** More tolerant: tries best headers first, then falls back to any NAICS-like value. */
 function normalizeNaicsAny(row) {
-  const a = onlyDigits(row["NAICS Code"]);
-  const b = onlyDigits(row["NAICS_Sector_Code"]);
-  // prefer the most specific we see across both columns
-  const candidates = [a, b].filter(Boolean);
-  if (candidates.length === 0) return "";
-  // choose the longest code available, capped to 6 digits
-  const best = candidates.sort((x,y)=>y.length-x.length)[0].slice(0,6);
-  // return 6,3,2 options that exist
-  return [6,3,2].map(n => best.length >= n ? best.slice(0,n) : null).filter(Boolean);
+  if (!row) return [];
+
+  const { detailedKey, sectorKey } = pickNaicsKeys(row);
+
+  const detailedVals = detailedKey ? parseNaicsValue(row[detailedKey]) : [];
+  const sectorVals   = sectorKey   ? parseNaicsValue(row[sectorKey])   : [];
+
+  // If neither header scored, as a last resort scan all NAICS-ish columns/values
+  let fallbackVals = [];
+  if (!detailedVals.length && !sectorVals.length) {
+    for (const [k, v] of Object.entries(row)) {
+      if (/\bnaics\b/i.test(k)) {
+        fallbackVals.push(...parseNaicsValue(v));
+      }
+    }
+  }
+
+  // Choose the most specific candidate across all we saw
+  const candidates = [...detailedVals, ...sectorVals, ...fallbackVals];
+  if (!candidates.length) return [];
+
+  // Prefer a 6-digit first, else 3-digit, else 2-digit
+  const best =
+    candidates.find(c => c.length === 6) ||
+    candidates.find(c => c.length === 3) ||
+    candidates.find(c => c.length === 2);
+
+  // Return [6,3,2] variants that exist from best
+  const out = [];
+  if (best.length >= 6) out.push(best.slice(0,6));
+  if (best.length >= 3) out.push(best.slice(0,3));
+  if (best.length >= 2) out.push(best.slice(0,2));
+  return [...new Set(out)];
+}
+
+/** Prefer detailed (6→3→2) first, then sector (6→3→2), dedup. */
+function naicsVariantsPreferDetailed(row) {
+  if (!row) return [];
+  const { detailedKey, sectorKey } = pickNaicsKeys(row);
+
+  const prefixes = [];
+  const pushPrefixes = (val) => {
+    for (const p of parseNaicsValue(val)) {
+      // expand a 6-digit to (6,3,2); a 3-digit to (3,2); a 2-digit to (2)
+      if (p.length === 6) prefixes.push(p.slice(0,6), p.slice(0,3), p.slice(0,2));
+      else if (p.length === 3) prefixes.push(p.slice(0,3), p.slice(0,2));
+      else if (p.length === 2) prefixes.push(p.slice(0,2));
+    }
+  };
+
+  if (detailedKey) pushPrefixes(row[detailedKey]);
+  if (sectorKey)   pushPrefixes(row[sectorKey]);
+
+  // last-resort: scan any NAICS-like header if nothing pushed
+  if (!prefixes.length) {
+    for (const [k, v] of Object.entries(row)) {
+      if (/\bnaics\b/i.test(k)) pushPrefixes(v);
+    }
+  }
+  return [...new Set(prefixes)];
 }
 ```
 
@@ -2532,24 +2681,6 @@ function buildSectorRiskIndex(rows) {
 const SECTOR_RISK_INDEX = buildSectorRiskIndex(sector_risk)
 ```
 
-
-```js
-// Prefer the more granular NAICS Code, then fall back to NAICS_Sector_Code
-function naicsVariantsPreferDetailed(row) {
-  const detailed = onlyDigits(row["NAICS Code"]);
-  const broad    = onlyDigits(row["NAICS_Sector_Code"]);
-
-  // Build candidate prefixes in order of preference:
-  // 1) detailed (6, then 3, then 2), then 2) broad (6/3/2 if present)
-  const prefixes = [];
-  if (detailed) for (const n of [6,3,2]) if (detailed.length >= n) prefixes.push(detailed.slice(0,n));
-  if (broad)    for (const n of [6,3,2]) if (broad.length    >= n) prefixes.push(broad.slice(0,n));
-
-  // de-dup while preserving order
-  return [...new Set(prefixes)];
-}
-
-```
 
 
 
@@ -3248,7 +3379,7 @@ Projects can be annotated with additional contextual risk data to dynamically mo
 
 ```js
 // Monitored in Last 2 Years
-const monitoredLast2Yi_view = Inputs.number({value: -20});
+const monitoredLast2Yi_view = Inputs.number({value: -40});
 const monitoredLast2Yi = Generators.input(monitoredLast2Yi_view);
 
 // Multiple Lenders
@@ -3268,11 +3399,11 @@ const adequateIESCSupervisioni_view = Inputs.number({value: -5});
 const adequateIESCSupervisioni = Generators.input(adequateIESCSupervisioni_view);
 
 // 008 Flag
-const redFlagi1_view = Inputs.number({value: 5});
+const redFlagi1_view = Inputs.number({value: 15});
 const redFlagi1 = Generators.input(redFlagi1_view);
 
 // Significant E&S Incident
-const redFlagi2_view = Inputs.number({value: 5});
+const redFlagi2_view = Inputs.number({value: 15});
 const redFlagi2 = Generators.input(redFlagi2_view);
 
 // Close Proximity to Other Projects
@@ -3311,13 +3442,13 @@ const analystAdjustmenti = Generators.input(analystAdjustmenti_view);
 
 | Modifier                        | Variable Name                                | Value   |
 |---------------------------------|----------------------------------------------|---------|
-| Monitored in Last 2 Years       | ${tex`\text{monitoredLast2Y}_i`}             | ${display(Inputs.bind(Inputs.number({value: -20, width: 14}), monitoredLast2Yi_view))}      |
+| Monitored in Last 2 Years       | ${tex`\text{monitoredLast2Y}_i`}             | ${display(Inputs.bind(Inputs.number({value: -40, width: 14}), monitoredLast2Yi_view))}      |
 | Multiple Lenders                | ${tex`\text{multipleLenders}_i`}             | ${display(Inputs.bind(Inputs.number({value: -2, width: 14}), multipleLendersi_view))}      |
 | Client Reporting                  | ${tex`\text{clientReporting}_i`}               | ${display(Inputs.bind(Inputs.number({value: -2, width: 14}), clientReportingi_view))}      |
 | IESC Reporting                  | ${tex`\text{iescReporting}_i`}               | ${display(Inputs.bind(Inputs.number({value: -2, width: 14}), iescReportingi_view))}     |
 | Adequate IESC Supervision       | ${tex`\text{adequateIESCSupervision}_i`}               | ${display(Inputs.bind(Inputs.number({value: -5, width: 14}), adequateIESCSupervisioni_view))}      |
-| 008 Flag                    | ${tex`\text{redFlag}_i`}                      | ${display(Inputs.bind(Inputs.number({value: 5, width: 14}), redFlagi1_view))}   |
-| Significant E&S Incident       | ${tex`\text{redFlag}_i`}                      | ${display(Inputs.bind(Inputs.number({value: 5, width: 14}), redFlagi2_view))}   |
+| 008 Flag                    | ${tex`\text{redFlag}_i`}                      | ${display(Inputs.bind(Inputs.number({value: 15, width: 14}), redFlagi1_view))}   |
+| Significant E&S Incident       | ${tex`\text{redFlag}_i`}                      | ${display(Inputs.bind(Inputs.number({value: 15, width: 14}), redFlagi2_view))}   |
 | Close Proximity to Other Projects | ${tex`\text{closeProximity}_i`}              | ${display(Inputs.bind(Inputs.number({value: 3, width: 14}), closeProximityi_view))}      |
 | Pre-Construction Phase          | ${tex`\text{constructionPhase}_i`}           | ${display(Inputs.bind(Inputs.number({value: 2, width: 14}), constructionPhasei1_view))}      |
 | Construction Phase              | ${tex`\text{constructionPhase}_i`}           | ${display(Inputs.bind(Inputs.number({value: 1, width: 14}), constructionPhasei2_view))}      |
@@ -5503,12 +5634,204 @@ function calculateContextScore_example(data) {
 ```
 
 
+<br>
+
+
+
+## Step 6: Factor for Financial Risk Exposure
+
+<!--
+Using the Finance Risk Report.
+-->
+
+**Project Rating**
+
+```js
+const finance_risk_report_workbook = await FileAttachment("/data/internal/Finance Risk Rpt 6302025 final.xlsx").xlsx()
+//display(finance_risk_report_workbook)
+```
+
+```js
+const finance_risk_report = finance_risk_report_workbook.sheet(0, {headers: true});
+display(finance_risk_report)
+```
+
+```js echo
+function ratingSteps(x) {
+  if (x <= 4) return 0;
+  if (x == 5) return 5;   // minimal effect
+  if (x >= 6 && x <= 7) return 8;   // minimal effect
+  if (x === 8) return 25;            // strong trigger
+  if (x === 9) return 30;
+  if (x === 10) return 32;
+  if (x === 11) return 34;
+  if (x >= 12) return 40;            // very strong
+}
+```
+
+```js
+// Build lookup map from finance_risk_report keyed by ProjectID
+const riskLookup = new Map(
+  finance_risk_report.map(d => [String(d["New ProjectID#"]), d["Project Rating"]])
+);
+```
+
+```js
+// Merge into written_context_value
+const projects_with_financal_risk_rating = written_context_value.map(row => {
+  let rating = null;
+  for (const key of JOIN_KEY_PROJECTS) {
+    if (row[key] != null && riskLookup.has(String(row[key]))) {
+      rating = riskLookup.get(String(row[key]));
+      break;
+    }
+  }
+  return {
+    ...row,
+    "Risk Report Project Rating, June 2025": rating,
+    "Factored Risk Rating Value": ratingSteps(rating)
+  };
+});
+display(projects_with_financal_risk_rating.map(d => ({
+  "Project ID": d["Project ID"],
+  "Project Name": d["Project Name"],
+  "Risk Report Project Rating, June 2025": d["Risk Report Project Rating, June 2025"],
+  "Factored Risk Rating Value": d["Factored Risk Rating Value"]
+})))
+```
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'projects_with_financal_risk_rating.csv', 'Download Projects with Financial Risk Rating');
+})(projects_with_financal_risk_rating))
+```
+
+
+
+**Financial Exposure**
+
+Financial exposure is calculated as the sum of two attributes in the Finance Risk Report workbook: Undisbursed + Outstanding. 
+
+```js
+// === Add financial exposure fields from Finance Risk Report ===
+
+// Build lookup with Undisbursed and Outstanding
+const financeLookup = new Map(
+  finance_risk_report.map(d => [
+    String(d["New ProjectID#"]),
+    {
+      rating: d["Project Rating"],
+      undisbursed: d["Undisbursed"],
+      outstanding: d["Outstanding"]
+    }
+  ])
+);
+
+const projects_with_financial_exposure = written_context_value.map(row => {
+  let data = null;
+  for (const key of JOIN_KEY_PROJECTS) {
+    if (row[key] != null && financeLookup.has(String(row[key]))) {
+      data = financeLookup.get(String(row[key]));
+      break;
+    }
+  }
+  const undisbursed = data ? Number(data.undisbursed) || 0 : null;
+  const outstanding = data ? Number(data.outstanding) || 0 : null;
+
+  return {
+    ...row,
+    "Risk Report Project Rating, June 2025": data ? data.rating : null,
+    "Factored Risk Rating Value": ratingSteps(data ? data.rating : null),
+    "Risk Report Undisbursed, June 2025": undisbursed,
+    "Risk Report Outstanding, June 2025": outstanding,
+    "Risk Report Exposure, June 2025":
+      undisbursed != null && outstanding != null ? undisbursed + outstanding : null
+  };
+});
+
+
+display(projects_with_financial_exposure.map(d => ({
+  "Project ID": d["Project ID"],
+  "Project Name": d["Project Name"],
+  "Risk Report Project Rating, June 2025": d["Risk Report Project Rating, June 2025"],
+  "Factored Risk Rating Value": d["Factored Risk Rating Value"],
+  "Risk Report Undisbursed, June 2025": d["Risk Report Undisbursed, June 2025"],
+  "Risk Report Outstanding, June 2025": d["Risk Report Outstanding, June 2025"],
+  "Risk Report Exposure, June 2025": d["Risk Report Exposure, June 2025"]
+})))
+```
+
+
+```js
+// === Function to assign Factored Risk Exposure by quintiles ===
+
+function assignExposureQuintiles(projects) {
+  // collect all numeric exposure values
+  const exposures = projects
+    .map(d => Number(d["Risk Report Exposure, June 2025"]))
+    .filter(v => Number.isFinite(v));
+
+  if (exposures.length === 0) return projects;
+
+  // sort exposures ascending
+  exposures.sort((a, b) => a - b);
+
+  // quintile breakpoints at 20%, 40%, 60%, 80%
+  const q1 = exposures[Math.floor(exposures.length * 0.2)];
+  const q2 = exposures[Math.floor(exposures.length * 0.4)];
+  const q3 = exposures[Math.floor(exposures.length * 0.6)];
+  const q4 = exposures[Math.floor(exposures.length * 0.8)];
+
+  // scoring function
+  function exposureScore(x) {
+    if (!Number.isFinite(x)) return null;
+    if (x <= q1) return 0;   // 1st fifth
+    if (x <= q2) return 2;   // 2nd fifth
+    if (x <= q3) return 5;   // 3rd fifth
+    if (x <= q4) return 8;   // 4th fifth
+    return 12;               // 5th fifth
+  }
+
+  return projects.map(row => ({
+    ...row,
+    "Factored Risk Exposure, June 2025":
+      exposureScore(Number(row["Risk Report Exposure, June 2025"]))
+  }));
+}
+
+// Apply to your enriched dataset
+const projects_with_exposure_quintiles =
+  assignExposureQuintiles(projects_with_financial_exposure);
+
+// Preview
+
+display(projects_with_exposure_quintiles.map(d => ({
+  "Project ID": d["Project ID"],
+  "Project Name": d["Project Name"],
+  "Risk Report Exposure, June 2025": d["Risk Report Exposure, June 2025"],
+  "Factored Risk Exposure, June 2025": d["Factored Risk Exposure, June 2025"]
+})));
+```
+
+
+```js
+display((data => {
+  const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
+  return download(blob, 'projects_with_exposure_quintiles.csv', 'Download Projects with Financial Exposure');
+})(projects_with_exposure_quintiles))
+```
+
+
+
+
 
 <br/>
 
 ---
 
-## Step 6: Final Risk Score
+## Step 7: Final Risk Score
 
 
 <!--
@@ -5528,25 +5851,32 @@ ${tex`\text{ESRS}_{\text{factored} {(i)}} = \min\left(\max\left(ESRS_{\text{coun
 
 
 ---
-**Step 6 Output** 
+**Step 7 Output** 
   
 
 ```js
+// Final score = ESRS_adjustment_calculated
+//             + context_score
+//             + Factored Risk Rating Value
+//             + Factored Risk Exposure, June 2025
+// Missing parts are ignored.
+
 function applyFinalFactoredScore(rows) {
   if (!Array.isArray(rows)) return [];
 
-  return rows.map(row => {
-    const base = Number(row.ESRS_adjustment_calculated);
-    const context = Number(row.context_score);
+  const toNum = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
 
-    let finalScore = null;
-    if (Number.isFinite(base) && Number.isFinite(context)) {
-      finalScore = base + context;
-    } else if (Number.isFinite(base)) {
-      finalScore = base; // if only base is valid
-    } else if (Number.isFinite(context)) {
-      finalScore = context; // if only context is valid
-    }
+  return rows.map(row => {
+    const base     = toNum(row.ESRS_adjustment_calculated);
+    const context  = toNum(row.context_score);
+    const rating   = toNum(row["Factored Risk Rating Value"]);
+    const exposure = toNum(row["Factored Risk Exposure, June 2025"]);
+
+    const parts = [base, context, rating, exposure].filter(v => v != null);
+    const finalScore = parts.length ? parts.reduce((a, b) => a + b, 0) : null;
 
     return {
       ...row,
@@ -5629,12 +5959,6 @@ display((data => {
 
 
 
-
-
-
----
-
-
 ## Portfolio Segmentation
 
 ```js
@@ -5674,7 +5998,12 @@ const top = view(Inputs.range([12,60], {value: 36, step: 1}))
 ```
 
 ```js
-Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring"))
+const top_search = view(Inputs.search(segmentedPortfolio.filter(d => d.monitoringTier === "priority for site monitoring")))
+```
+
+
+```js
+Inputs.table(top_search)
 ```
 
 
@@ -5692,15 +6021,22 @@ display((data => {
 const mid = view(Inputs.range([12,48], {value: 36, step: 1}))
 ```
 
+
+
 ```js
-Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for special consideration"))
+const mid_search = view(Inputs.search(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for special consideration")))
+```
+
+
+```js
+Inputs.table(mid_search)
 ```
 
 
 ```js
 display((data => {
   const blob = new Blob([d3.csvFormat(data)], { type: "text/csv" });
-  return download(blob, 'active_projects_ESG_risk_top_segment.csv', 'Download Middle Segment for Desk Monitoring');
+  return download(blob, 'active_projects_ESG_risk_mid_segment.csv', 'Download Middle Segment for Desk Monitoring');
 })(segmentedPortfolio.filter(d => d.monitoringTier === "recommended for special consideration")));
 ```
 
@@ -5708,9 +6044,17 @@ display((data => {
 
 ### Not Prioritized 
 
+
+
 ```js
-Inputs.table(segmentedPortfolio.filter(d => d.monitoringTier === "standard monitoring"))
+const low_search = view(Inputs.search(segmentedPortfolio.filter(d => d.monitoringTier === "standard monitoring")))
 ```
+
+
+```js
+Inputs.table(low_search)
+```
+
 
 
 ```js
